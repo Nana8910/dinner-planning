@@ -178,39 +178,26 @@ function autoArrange(dishes, settings) {
     .filter((d) => d.status !== "eaten")
     .map((d) => ({ ...d, dayIndex: null, storage: null, status: "planned" }));
 
-  const mainLoad = Array(days).fill(0);
-  const sideLoad = Array(days).fill(0);
+  // 冷蔵のみ→先（前半で食べきる）、冷凍可→後ろ（後半にまわす）。
+  const order = (list) => [
+    ...list.filter((d) => !d.freezable),
+    ...list.filter((d) => d.freezable),
+  ];
+  const mains = order(movable.filter((d) => d.category === "main"));
+  const sides = order(movable.filter((d) => d.category === "side"));
 
-  const pick = (load, prefer, cap) => {
-    let order = load.map((_, i) => i);
-    if (prefer === "late") order = order.reverse();
-    for (const i of order) if (load[i] < cap) return i; // spread first
-    let best = order[0];
-    for (const i of order) if (load[i] < load[best]) best = i; // then least-loaded
-    return best;
-  };
-
-  const place = (list, isMain) => {
-    const cap = isMain ? 1 : 2;
-    const load = isMain ? mainLoad : sideLoad;
-    const fridge = list.filter((d) => !d.freezable);
-    const freeze = list.filter((d) => d.freezable);
-    for (const d of fridge) {
-      const t = pick(load, "early", cap);
-      d.dayIndex = t;
-      load[t]++;
-      d.storage = storageFor(d, t, freshDays);
+  // 月曜(0)から1日ずつ、主菜1品・副菜1品を割り当てて埋める。
+  // 日数を超えたぶんは dayIndex=null のままストックに残す（週後半は空白でOK）。
+  for (let i = 0; i < days; i++) {
+    if (mains[i]) {
+      mains[i].dayIndex = i;
+      mains[i].storage = storageFor(mains[i], i, freshDays);
     }
-    for (const d of freeze) {
-      const t = pick(load, "late", cap);
-      d.dayIndex = t;
-      load[t]++;
-      d.storage = storageFor(d, t, freshDays);
+    if (sides[i]) {
+      sides[i].dayIndex = i;
+      sides[i].storage = storageFor(sides[i], i, freshDays);
     }
-  };
-
-  place(movable.filter((d) => d.category === "main"), true);
-  place(movable.filter((d) => d.category === "side"), false);
+  }
 
   return [...kept, ...movable];
 }
@@ -466,7 +453,7 @@ function App() {
                 return;
               }
               dispatch({ type: "AUTO" });
-              ping("冷蔵は前半・冷凍は後半にふりわけました");
+              ping("月曜から主菜・副菜を1品ずつ置きました");
             }}
             onClear={() => dispatch({ type: "CLEAR_PLAN" })}
             onOpenSheet={(id, mode, from) => setSheet({ id, mode, from })}
