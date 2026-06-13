@@ -5,7 +5,7 @@ name: update-menu
 
 on:
   schedule:
-    - cron: "0 21 * * *" # 毎日 21:00 UTC = 翌 06:00 JST
+    - cron: "0 0 * * 5" # 毎週金曜 09:00 JST (00:00 UTC)。メニューは木曜更新なので翌金曜に取得
   workflow_dispatch: {}
 
 permissions:
