@@ -13,6 +13,7 @@ import {
   Sparkles,
   AlertTriangle,
   PackageOpen,
+  RefreshCw,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ *
@@ -50,9 +51,10 @@ function weekStartISO(id) {
   return `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`;
 }
 /* 今日を含む（まだ終わっていない）最初のお届け週を選ぶ */
-function currentWeek() {
+function pickCurrentWeek(weeks) {
+  const list = weeks && weeks.length ? weeks : WEEKS;
   const today = todayISO();
-  const sorted = [...WEEKS].sort((a, b) => a.id.localeCompare(b.id));
+  const sorted = [...list].sort((a, b) => a.id.localeCompare(b.id));
   for (const w of sorted) {
     const d = new Date(weekStartISO(w.id) + "T00:00:00");
     d.setDate(d.getDate() + 6); // その週の日曜
@@ -62,6 +64,20 @@ function currentWeek() {
 }
 function uid() {
   return Math.random().toString(36).slice(2, 9);
+}
+
+/* 同一オリジンの menu.json（GitHub Actions が毎週自動更新）を読みにいく。
+ * 取れなければ null を返し、ハードコードの WEEKS をフォールバックに使う。 */
+async function loadMenu() {
+  try {
+    const res = await fetch("./menu.json?ts=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && Array.isArray(data.weeks) && data.weeks.length > 0) return data;
+  } catch {
+    /* ネット断・404・パース失敗などは無視してフォールバック */
+  }
+  return null;
 }
 
 /* ツクリオ公式お届けメニュー（tsuklio.com/menu より取得・2026年6月時点）。
@@ -303,9 +319,15 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [sheet, setSheet] = useState(null); // { id, mode:'assign'|'move', from }
   const [toast, setToast] = useState("");
+  const [menu, setMenu] = useState({ weeks: WEEKS, updatedAt: null }); // 最新メニュー（menu.json）
 
   useEffect(() => {
     (async () => {
+      // 先に最新メニュー（menu.json）を読み込む。取れなければ WEEKS をフォールバック。
+      const menuData = await loadMenu();
+      const weeks = menuData ? menuData.weeks : WEEKS;
+      if (menuData) setMenu({ weeks, updatedAt: menuData.updatedAt });
+
       const saved = await loadSaved();
       if (saved && saved.dishes) {
         dispatch({ type: "LOAD", payload: saved });
@@ -316,7 +338,7 @@ export default function App() {
         });
       } else {
         // 初回起動：今週お届けのおかず（週3食ぶん）をストックに入れて、すぐ見える状態に
-        const wk = currentWeek();
+        const wk = pickCurrentWeek(weeks);
         dispatch({ type: "SET_SETTINGS", patch: { startDate: weekStartISO(wk.id) } });
         const seed = wk.dishes
           .filter((d) => d.plan !== "5食")
@@ -326,6 +348,17 @@ export default function App() {
       setReady(true);
     })();
   }, []);
+
+  // 「最新メニューに更新」ボタン用：menu.json を取り直して週リストを差し替える
+  const refreshMenu = async () => {
+    const data = await loadMenu();
+    if (data) {
+      setMenu({ weeks: data.weeks, updatedAt: data.updatedAt });
+      ping(`最新メニューに更新しました（${data.weeks.length}週分）`);
+    } else {
+      ping("メニューを取得できませんでした");
+    }
+  };
 
   useEffect(() => {
     if (!ready) return;
@@ -421,6 +454,9 @@ export default function App() {
           <DishesView
             dishes={dishes}
             settings={settings}
+            weeks={menu.weeks}
+            menuUpdatedAt={menu.updatedAt}
+            onRefreshMenu={refreshMenu}
             onLoadWeek={(items, weekId) => {
               if (weekId)
                 dispatch({ type: "SET_SETTINGS", patch: { startDate: weekStartISO(weekId) } });
@@ -761,15 +797,31 @@ function DaySheet({ dish, mode, from, settings, dishes, onPick, onUnassign, onCl
 }
 
 /* ------------------------------ Dishes view ------------------------------ */
-function DishesView({ dishes, settings, onLoadWeek, onAdd, onDelete, onToggleFreeze }) {
+function DishesView({
+  dishes,
+  settings,
+  weeks,
+  menuUpdatedAt,
+  onRefreshMenu,
+  onLoadWeek,
+  onAdd,
+  onDelete,
+  onToggleFreeze,
+}) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("main");
   const [freezable, setFreezable] = useState(false);
   const [source, setSource] = useState("tsukurioki");
-  const [weekId, setWeekId] = useState(() => currentWeek().id);
+  const [weekId, setWeekId] = useState(() => pickCurrentWeek(weeks).id);
   const [include5, setInclude5] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const week = WEEKS.find((w) => w.id === weekId);
+  // menu.json が後から読み込まれて週が入れ替わったら、選択を今週に寄せる
+  useEffect(() => {
+    if (!weeks.some((w) => w.id === weekId)) setWeekId(pickCurrentWeek(weeks).id);
+  }, [weeks]);
+
+  const week = weeks.find((w) => w.id === weekId) || weeks[0];
   const preview = week.dishes.filter((d) => include5 || d.plan !== "5食");
 
   const submit = () => {
@@ -800,8 +852,27 @@ function DishesView({ dishes, settings, onLoadWeek, onAdd, onDelete, onToggleFre
           ツクリオ公式メニューの主菜・副菜を、冷凍可否つきでまとめて登録します。
         </p>
 
+        <div className="om-menu-update">
+          <span className="om-menu-date">
+            メニュー更新日：
+            {menuUpdatedAt ? new Date(menuUpdatedAt).toLocaleDateString("ja-JP") : "—（内蔵データ）"}
+          </span>
+          <button
+            className="om-refresh"
+            disabled={refreshing}
+            onClick={async () => {
+              setRefreshing(true);
+              await onRefreshMenu();
+              setRefreshing(false);
+            }}
+          >
+            <RefreshCw size={14} className={refreshing ? "om-spin" : ""} />
+            {refreshing ? "更新中…" : "最新メニューに更新"}
+          </button>
+        </div>
+
         <div className="om-week-pick">
-          {WEEKS.map((w) => (
+          {weeks.map((w) => (
             <button
               key={w.id}
               className={"om-week" + (w.id === weekId ? " on" : "")}
@@ -836,7 +907,7 @@ function DishesView({ dishes, settings, onLoadWeek, onAdd, onDelete, onToggleFre
           <Plus size={17} /> この週のこんだてにする（{preview.length}品）
         </button>
         <p className="om-src-note">
-          出典：ツクリオ公式お届けメニュー（2026年6月時点）。冷凍可否は公式の「冷凍不可」表示にもとづきます。
+          出典：ツクリオ公式お届けメニュー（毎日自動取得）。冷凍可否は公式の「冷凍不可」表示にもとづきます。
         </p>
       </section>
 
@@ -1196,6 +1267,14 @@ const CSS = `
 .om-mini-toggle.on .om-switch{background:var(--frozen);}
 .om-mini-toggle.on .om-switch.sm .om-switch-knob{left:16.5px;}
 .om-src-note{font-size:10.5px; color:var(--ink2); line-height:1.55; margin:11px 0 0; opacity:.85;}
+.om-menu-update{display:flex; align-items:center; gap:8px; justify-content:space-between; margin:0 0 12px; flex-wrap:wrap;}
+.om-menu-date{font-size:11px; color:var(--ink2); font-weight:700;}
+.om-refresh{display:inline-flex; align-items:center; gap:6px; background:var(--frozen-bg); color:var(--frozen);
+  border:1px solid #CFE0EA; border-radius:11px; padding:8px 12px; font-weight:800; font-size:12px;}
+.om-refresh:hover:not(:disabled){filter:brightness(.97);}
+.om-refresh:disabled{opacity:.6;}
+.om-spin{animation:om-rot .8s linear infinite;}
+@keyframes om-rot{to{transform:rotate(360deg);}}
 .om-kid{font-size:10px; font-weight:800; color:var(--accent); background:var(--accent-bg); padding:2px 6px; border-radius:6px; flex-shrink:0;}
 .om-empty{font-size:13px; color:var(--ink2); line-height:1.7; text-align:center; padding:24px 12px;}
 
