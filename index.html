@@ -58,6 +58,33 @@ function dateForIndex(startISO, i) {
   d.setDate(d.getDate() + i);
   return d;
 }
+function isoOf(d) {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+/* どの日付を渡しても、その週の月曜日を返す（こんだては月曜はじまり） */
+function mondayISO(iso) {
+  const d = new Date((iso || todayISO()) + "T00:00:00");
+  const wd = d.getDay(); // 0=日, 1=月, ... 6=土
+  d.setDate(d.getDate() + (wd === 0 ? -6 : 1 - wd));
+  return isoOf(d);
+}
+/* お届け週ID "20260615" -> "2026-06-15"（＝その週の月曜） */
+function weekStartISO(id) {
+  return `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`;
+}
+/* 今日を含む（まだ終わっていない）最初のお届け週を選ぶ */
+function currentWeek() {
+  const today = todayISO();
+  const sorted = [...WEEKS].sort((a, b) => a.id.localeCompare(b.id));
+  for (const w of sorted) {
+    const d = new Date(weekStartISO(w.id) + "T00:00:00");
+    d.setDate(d.getDate() + 6); // その週の日曜
+    if (isoOf(d) >= today) return w;
+  }
+  return sorted[sorted.length - 1];
+}
 function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
@@ -104,7 +131,7 @@ const WEEKS = [
   },
 ];
 
-const initialSettings = { people: 2, days: 7, freshDays: 3, startDate: todayISO() };
+const initialSettings = { people: 2, days: 7, freshDays: 3, startDate: mondayISO() };
 const blankState = () => ({ dishes: [], settings: { ...initialSettings } });
 
 function makeDish(d) {
@@ -176,8 +203,11 @@ function reducer(state, action) {
   switch (action.type) {
     case "LOAD":
       return action.payload;
-    case "SET_SETTINGS":
-      return { ...state, settings: { ...state.settings, ...action.patch } };
+    case "SET_SETTINGS": {
+      const patch = { ...action.patch };
+      if (patch.startDate) patch.startDate = mondayISO(patch.startDate); // 週は必ず月曜はじまり
+      return { ...state, settings: { ...state.settings, ...patch } };
+    }
     case "ADD_DISHES":
       return { ...state, dishes: [...state.dishes, ...action.dishes.map(makeDish)] };
     case "DELETE_DISH":
@@ -304,9 +334,16 @@ function App() {
       const saved = await loadSaved();
       if (saved && saved.dishes) {
         dispatch({ type: "LOAD", payload: saved });
+        // 既存データも月曜はじまりに揃える
+        dispatch({
+          type: "SET_SETTINGS",
+          patch: { startDate: (saved.settings && saved.settings.startDate) || todayISO() },
+        });
       } else {
-        // 初回起動：次回お届け週（週3食ぶん）を読み込んで、すぐデータが見える状態に
-        const seed = WEEKS[0].dishes
+        // 初回起動：今週お届けのおかず（週3食ぶん）をストックに入れて、すぐ見える状態に
+        const wk = currentWeek();
+        dispatch({ type: "SET_SETTINGS", patch: { startDate: weekStartISO(wk.id) } });
+        const seed = wk.dishes
           .filter((d) => d.plan !== "5食")
           .map((d) => ({ ...d, source: "tsukurioki", servings: initialSettings.people }));
         dispatch({ type: "ADD_DISHES", dishes: seed });
@@ -409,15 +446,17 @@ function App() {
           <DishesView
             dishes={dishes}
             settings={settings}
-            onLoadWeek={(items) => {
+            onLoadWeek={(items, weekId) => {
+              if (weekId)
+                dispatch({ type: "SET_SETTINGS", patch: { startDate: weekStartISO(weekId) } });
               const have = new Set(dishes.map((d) => d.source + "::" + d.name));
               const fresh = items.filter((d) => !have.has("tsukurioki::" + d.name));
               if (fresh.length === 0) {
-                ping("その週のおかずは追加済みです");
+                ping("その週のこんだてに切り替えました");
                 return;
               }
               dispatch({ type: "ADD_DISHES", dishes: fresh });
-              ping(`${fresh.length}品を追加しました`);
+              ping(`${fresh.length}品をストックに追加しました`);
             }}
             onAdd={(d) => {
               dispatch({ type: "ADD_DISHES", dishes: [d] });
@@ -752,7 +791,7 @@ function DishesView({ dishes, settings, onLoadWeek, onAdd, onDelete, onToggleFre
   const [category, setCategory] = useState("main");
   const [freezable, setFreezable] = useState(false);
   const [source, setSource] = useState("tsukurioki");
-  const [weekId, setWeekId] = useState(WEEKS[0].id);
+  const [weekId, setWeekId] = useState(() => currentWeek().id);
   const [include5, setInclude5] = useState(false);
 
   const week = WEEKS.find((w) => w.id === weekId);
@@ -767,7 +806,8 @@ function DishesView({ dishes, settings, onLoadWeek, onAdd, onDelete, onToggleFre
 
   const loadWeek = () => {
     onLoadWeek(
-      preview.map((d) => ({ ...d, source: "tsukurioki", servings: settings.people }))
+      preview.map((d) => ({ ...d, source: "tsukurioki", servings: settings.people })),
+      week.id
     );
   };
 
@@ -818,7 +858,7 @@ function DishesView({ dishes, settings, onLoadWeek, onAdd, onDelete, onToggleFre
         </button>
 
         <button className="om-primary wide" onClick={loadWeek}>
-          <Plus size={17} /> この週のおかずを追加（{preview.length}品）
+          <Plus size={17} /> この週のこんだてにする（{preview.length}品）
         </button>
         <p className="om-src-note">
           出典：ツクリオ公式お届けメニュー（2026年6月時点）。冷凍可否は公式の「冷凍不可」表示にもとづきます。
@@ -937,13 +977,14 @@ function SettingsSheet({ settings, onChange, onReset, onClose }) {
         </div>
 
         <label className="om-field">
-          <span>受け取り日（週のはじめ）</span>
+          <span>お届け日（週のはじめ・毎週月曜）</span>
           <input
             type="date"
             className="om-input"
             value={settings.startDate}
             onChange={(e) => onChange({ startDate: e.target.value })}
           />
+          <small className="om-hint">どの曜日を選んでも、その週の月曜はじまりに調整されます。</small>
         </label>
 
         <div className="om-field">
