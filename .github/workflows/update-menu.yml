@@ -1,0 +1,41 @@
+name: update-menu
+
+# ツクリオ公式メニューを定期取得して menu.json を更新する。
+# 手動実行（workflow_dispatch）でも即時更新できる。
+
+on:
+  schedule:
+    - cron: "0 21 * * *" # 毎日 21:00 UTC = 翌 06:00 JST
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-menu
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Scrape latest menu
+        run: node scripts/scrape-menu.mjs
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- menu.json; then
+            echo "menu.json に変更なし。コミットしません。"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add menu.json
+            git commit -m "メニュー自動更新: $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi
