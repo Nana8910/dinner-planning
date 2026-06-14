@@ -630,14 +630,14 @@ function PlanView({
     <div className="om-plan">
       {/* 週ナビ */}
       <div className="om-weeknav">
-        <button onClick={onPrev} aria-label="先週">
+        <button className="om-weeknav-arrow" onClick={onPrev} aria-label="先週">
           <ChevronLeft size={20} />
         </button>
         <button className="om-weeknav-c" onClick={onToday}>
           <span className="om-weeknav-label">{weekLabelFromMonday(viewMonday)}</span>
           <span className={"om-weeknav-badge " + badge.c}>{badge.t}</span>
         </button>
-        <button onClick={onNext} aria-label="翌週">
+        <button className="om-weeknav-arrow" onClick={onNext} aria-label="翌週">
           <ChevronRight size={20} />
         </button>
       </div>
@@ -668,7 +668,7 @@ function PlanView({
       {/* 操作 */}
       <div className="om-actions">
         <button className="om-primary" onClick={onAuto}>
-          <Sparkles size={17} /> この週に自動でふりわけ
+          <Sparkles size={17} /> 自動でふりわけ
         </button>
         {assignedCount > 0 && (
           <button className="om-ghost" onClick={onClear}>
@@ -1285,14 +1285,14 @@ const CSS = `
 .om-main{padding:4px 18px 0;}
 
 /* week nav */
-.om-weeknav{display:flex; align-items:center; gap:8px; margin:6px 0 12px;}
-.om-weeknav>button{width:42px;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card);
-  color:var(--ink2);display:grid;place-items:center;flex:none;}
-.om-weeknav>button:hover{color:var(--ink);border-color:var(--ink2);}
-.om-weeknav-c{flex:1;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:7px;
-  display:flex;flex-direction:column;align-items:center;gap:1px;}
-.om-weeknav-label{font-size:18px;font-weight:800;letter-spacing:.02em;}
-.om-weeknav-badge{font-size:10px;font-weight:800;padding:2px 9px;border-radius:8px;}
+.om-weeknav{display:flex; align-items:stretch; gap:8px; margin:6px 0 12px;}
+.om-weeknav-arrow{width:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);
+  color:var(--ink2);display:grid;place-items:center;flex:0 0 44px;}
+.om-weeknav-arrow:hover{color:var(--ink);border-color:var(--ink2);}
+.om-weeknav-c{flex:1 1 auto;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:9px 8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.om-weeknav-label{font-size:17px;font-weight:800;letter-spacing:.01em;white-space:nowrap;line-height:1.1;}
+.om-weeknav-badge{font-size:10px;font-weight:800;padding:2px 9px;border-radius:8px;line-height:1.3;}
 .om-weeknav-badge.now{background:var(--accent);color:#fff;}
 .om-weeknav-badge.past{background:#EDEAE2;color:var(--ink2);}
 .om-weeknav-badge.future{background:var(--frozen-bg);color:var(--frozen);}
