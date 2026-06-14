@@ -14,30 +14,36 @@ import {
   AlertTriangle,
   PackageOpen,
   RefreshCw,
+  History,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ *
  *  ツクリオリオ — ツクリオの一週間こんだてプランナー
  *  冷蔵のおかずは前半に、冷凍できるものは後半にまわして使い切る。
+ *  献立は「絶対日付」で保持し、過去は「りれき」カレンダーで振り返る。
  * ------------------------------------------------------------------ */
 
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 
 function todayISO() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-function dateForIndex(startISO, i) {
-  const d = new Date(startISO + "T00:00:00");
-  d.setDate(d.getDate() + i);
-  return d;
+  return isoOf(new Date());
 }
 function isoOf(d) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${day}`;
+}
+function addDaysISO(iso, n) {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return isoOf(d);
+}
+function daysBetween(aISO, bISO) {
+  const a = new Date(aISO + "T00:00:00");
+  const b = new Date(bISO + "T00:00:00");
+  return Math.round((b - a) / 86400000);
 }
 /* どの日付を渡しても、その週の月曜日を返す（こんだては月曜はじまり） */
 function mondayISO(iso) {
@@ -46,9 +52,22 @@ function mondayISO(iso) {
   d.setDate(d.getDate() + (wd === 0 ? -6 : 1 - wd));
   return isoOf(d);
 }
-/* お届け週ID "20260615" -> "2026-06-15"（＝その週の月曜） */
+/* お届け週ID "20260427" <-> "2026-04-27"（＝その週の月曜） */
 function weekStartISO(id) {
   return `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`;
+}
+function idOfMonday(iso) {
+  return iso.replace(/-/g, "");
+}
+function fmtMD(iso) {
+  const d = new Date(iso + "T00:00:00");
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+function wdOf(iso) {
+  return WD[new Date(iso + "T00:00:00").getDay()];
+}
+function weekLabelFromMonday(monISO) {
+  return `${fmtMD(monISO)}〜${fmtMD(addDaysISO(monISO, 6))}`;
 }
 /* 今日を含む（まだ終わっていない）最初のお届け週を選ぶ */
 function pickCurrentWeek(weeks) {
@@ -56,9 +75,8 @@ function pickCurrentWeek(weeks) {
   const today = todayISO();
   const sorted = [...list].sort((a, b) => a.id.localeCompare(b.id));
   for (const w of sorted) {
-    const d = new Date(weekStartISO(w.id) + "T00:00:00");
-    d.setDate(d.getDate() + 6); // その週の日曜
-    if (isoOf(d) >= today) return w;
+    const sun = addDaysISO(weekStartISO(w.id), 6);
+    if (sun >= today) return w;
   }
   return sorted[sorted.length - 1];
 }
@@ -80,51 +98,30 @@ async function loadMenu() {
   return null;
 }
 
-/* ツクリオ公式お届けメニュー（tsuklio.com/menu より取得・2026年6月時点）。
- * freezable は公式の「冷凍不可」表示に基づく（不可=false）。
- * plan:"5食" は週5食プラン限定／倍量メニュー。 */
+/* ツクリオ公式お届けメニューのフォールバック（menu.json が取れない時のみ使用）。 */
 const WEEKS = [
-  {
-    id: "20260622",
-    label: "6/22〜6/28",
-    recommend: "牛バラ大根",
-    dishes: [
-      { name: "辛くないマーボーなす", category: "main", freezable: true },
-      { name: "牛バラ大根", category: "main", freezable: true },
-      { name: "白身魚のフライ", category: "main", freezable: true },
-      { name: "五目つくねの出汁あんかけ", category: "main", freezable: true, plan: "5食" },
-      { name: "家常豆腐", category: "main", freezable: true, plan: "5食" },
-      { name: "春雨サラダ", category: "side", freezable: false },
-      { name: "ブロッコリーと卵のデリ風サラダ", category: "side", freezable: false },
-      { name: "たけのこの土佐煮", category: "side", freezable: true },
-      { name: "ひき肉と豆腐のにら炒め", category: "side", freezable: false },
-      { name: "湯葉と食べるオクラと菜の花のお浸し", category: "side", freezable: false },
-      { name: "ラタトゥイユ", category: "side", freezable: true, plan: "5食" },
-    ],
-  },
   {
     id: "20260615",
     label: "6/15〜6/21",
     recommend: "みそ旨チーズタッカルビ",
     dishes: [
-      { name: "みそ旨チーズタッカルビ", category: "main", freezable: true, kid: true },
+      { name: "みそ旨チーズタッカルビ", category: "main", freezable: true },
       { name: "塩まーぼー", category: "main", freezable: false },
-      { name: "豚肉とレンコンのイタリア風煮込み", category: "main", freezable: true, kid: true },
-      { name: "5種野菜入りソースのポークチャップ", category: "main", freezable: true, plan: "5食" },
-      { name: "ごはんと一緒に！ガパオミート", category: "main", freezable: true, plan: "5食" },
+      { name: "豚肉とレンコンのイタリア風煮込み", category: "main", freezable: true },
       { name: "定番の五目白和え", category: "side", freezable: true },
       { name: "小松菜とごぼうの胡麻和え", category: "side", freezable: false },
       { name: "クリームソースのかぼちゃニョッキ", category: "side", freezable: false },
       { name: "5種野菜のみぞれ煮", category: "side", freezable: true },
       { name: "さつま揚げと糸こんにゃくの甘辛炒め", category: "side", freezable: false },
-      { name: "五目野菜とひじきの中華そぼろ炒め", category: "side", freezable: true, plan: "5食" },
     ],
   },
 ];
 
-const initialSettings = { people: 2, days: 7, freshDays: 3, startDate: mondayISO() };
-const blankState = () => ({ dishes: [], settings: { ...initialSettings } });
+const initialSettings = { people: 2, freshDays: 3 };
+const blankState = () => ({ recipes: [], dishes: [], settings: { ...initialSettings } });
 
+/* 配置/ストックの実体（ツクリオ取り込み分＋自作から置いた分）。
+ * date===null はストック、date がある日に置かれている。weekId は「届いた週」。 */
 function makeDish(d) {
   return {
     id: uid(),
@@ -134,67 +131,77 @@ function makeDish(d) {
     servings: d.servings || 2,
     source: d.source || "tsukurioki",
     kid: !!d.kid,
-    dayIndex: null,
+    weekId: d.weekId || null,
+    date: null, // 'YYYY-MM-DD' | null
     storage: null, // 'fridge' | 'frozen'
     status: "planned", // 'planned' | 'eaten'
   };
 }
-
-function storageFor(dish, dayIndex, freshDays) {
-  if (!dish.freezable) return "fridge";
-  return dayIndex >= freshDays ? "frozen" : "fridge";
+/* 自作レシピ帳のテンプレ（再利用可・グローバル）。 */
+function makeRecipe(d) {
+  return {
+    id: uid(),
+    name: d.name.trim(),
+    category: d.category || "main",
+    freezable: !!d.freezable,
+  };
 }
 
-/* ---- 自動ふりわけ: 冷蔵のみ→前半 / 冷凍可→後半 ---- */
-function autoArrange(dishes, settings) {
-  const { days, freshDays } = settings;
-  const kept = dishes.filter((d) => d.status === "eaten");
-  const movable = dishes
-    .filter((d) => d.status !== "eaten")
-    .map((d) => ({ ...d, dayIndex: null, storage: null, status: "planned" }));
+/* 冷蔵/冷凍の判定：届いた週の月曜から freshDays 日以上あとに食べるなら冷凍。 */
+function storageForDate(dish, dateISO, freshDays) {
+  if (!dish.freezable) return "fridge";
+  const refMon = dish.weekId ? weekStartISO(dish.weekId) : mondayISO(dateISO);
+  return daysBetween(refMon, dateISO) >= freshDays ? "frozen" : "fridge";
+}
 
-  // 冷蔵のみ→先（前半で食べきる）、冷凍可→後ろ（後半にまわす）。
+/* ---- 自動ふりわけ: 指定週のストックを、月曜から主菜1・副菜1ずつ埋める ---- */
+function autoArrangeWeek(dishes, weekId, settings) {
+  const { freshDays } = settings;
+  const mon = weekStartISO(weekId);
+  const weekDates = Array.from({ length: 7 }, (_, i) => addDaysISO(mon, i));
   const order = (list) => [
-    ...list.filter((d) => !d.freezable),
-    ...list.filter((d) => d.freezable),
+    ...list.filter((d) => !d.freezable), // 冷蔵のみ→先（前半で食べきる）
+    ...list.filter((d) => d.freezable), // 冷凍可→後ろ（後半にまわす）
   ];
+  // この週の未食を一旦ストックに戻す（クローン）。他の週はそのまま。
+  const next = dishes.map((d) =>
+    d.weekId === weekId && d.status !== "eaten" ? { ...d, date: null, storage: null } : d
+  );
+  const movable = next.filter((d) => d.weekId === weekId && d.status !== "eaten");
   const mains = order(movable.filter((d) => d.category === "main"));
   const sides = order(movable.filter((d) => d.category === "side"));
-
-  // 月曜(0)から1日ずつ、主菜1品・副菜1品を割り当てて埋める。
-  // 日数を超えたぶんは dayIndex=null のままストックに残す（週後半は空白でOK）。
-  for (let i = 0; i < days; i++) {
+  for (let i = 0; i < 7; i++) {
     if (mains[i]) {
-      mains[i].dayIndex = i;
-      mains[i].storage = storageFor(mains[i], i, freshDays);
+      mains[i].date = weekDates[i];
+      mains[i].storage = storageForDate(mains[i], weekDates[i], freshDays);
     }
     if (sides[i]) {
-      sides[i].dayIndex = i;
-      sides[i].storage = storageFor(sides[i], i, freshDays);
+      sides[i].date = weekDates[i];
+      sides[i].storage = storageForDate(sides[i], weekDates[i], freshDays);
     }
   }
-
-  return [...kept, ...movable];
+  return next;
 }
 
 function reducer(state, action) {
   switch (action.type) {
     case "LOAD":
       return action.payload;
-    case "SET_SETTINGS": {
-      const patch = { ...action.patch };
-      if (patch.startDate) patch.startDate = mondayISO(patch.startDate); // 週は必ず月曜はじまり
-      return { ...state, settings: { ...state.settings, ...patch } };
-    }
+    case "SET_SETTINGS":
+      return { ...state, settings: { ...state.settings, ...action.patch } };
     case "ADD_DISHES":
       return { ...state, dishes: [...state.dishes, ...action.dishes.map(makeDish)] };
     case "DELETE_DISH":
       return { ...state, dishes: state.dishes.filter((d) => d.id !== action.id) };
-    case "TOGGLE_FREEZABLE":
+    case "ADD_RECIPE":
+      return { ...state, recipes: [...state.recipes, makeRecipe(action.recipe)] };
+    case "DELETE_RECIPE":
+      return { ...state, recipes: state.recipes.filter((r) => r.id !== action.id) };
+    case "TOGGLE_RECIPE_FREEZE":
       return {
         ...state,
-        dishes: state.dishes.map((d) =>
-          d.id === action.id ? { ...d, freezable: !d.freezable } : d
+        recipes: state.recipes.map((r) =>
+          r.id === action.id ? { ...r, freezable: !r.freezable } : r
         ),
       };
     case "ASSIGN":
@@ -204,8 +211,8 @@ function reducer(state, action) {
           d.id === action.id
             ? {
                 ...d,
-                dayIndex: action.dayIndex,
-                storage: storageFor(d, action.dayIndex, state.settings.freshDays),
+                date: action.date,
+                storage: storageForDate(d, action.date, state.settings.freshDays),
                 status: "planned",
               }
             : d
@@ -215,9 +222,7 @@ function reducer(state, action) {
       return {
         ...state,
         dishes: state.dishes.map((d) =>
-          d.id === action.id
-            ? { ...d, dayIndex: null, storage: null, status: "planned" }
-            : d
+          d.id === action.id ? { ...d, date: null, storage: null, status: "planned" } : d
         ),
       };
     case "SET_STATUS":
@@ -227,17 +232,16 @@ function reducer(state, action) {
           d.id === action.id ? { ...d, status: action.status } : d
         ),
       };
-    case "AUTO":
-      return { ...state, dishes: autoArrange(state.dishes, state.settings) };
-    case "CLEAR_PLAN":
+    case "AUTO_WEEK":
+      return { ...state, dishes: autoArrangeWeek(state.dishes, action.weekId, state.settings) };
+    case "CLEAR_WEEK":
       return {
         ...state,
-        dishes: state.dishes.map((d) => ({
-          ...d,
-          dayIndex: null,
-          storage: null,
-          status: "planned",
-        })),
+        dishes: state.dishes.map((d) =>
+          d.weekId === action.weekId
+            ? { ...d, date: null, storage: null, status: "planned" }
+            : d
+        ),
       };
     case "RESET":
       return blankState();
@@ -246,12 +250,34 @@ function reducer(state, action) {
   }
 }
 
-/* ------------------------------- storage ------------------------------- *
- * 保存先の優先順位：
- *   1. localStorage（実環境のブラウザ。これが本命）
- *   2. window.storage（Claude アーティファクト環境のフォールバック）
- * どちらも使えない場合は保存しない（メモリ上のみ）。
- * ---------------------------------------------------------------------- */
+/* 旧フォーマット（相対 dayIndex＋単一 startDate）→ 新フォーマット（絶対日付）へ移行 */
+function migrateOld(saved) {
+  const mon = mondayISO((saved.settings && saved.settings.startDate) || todayISO());
+  const wid = idOfMonday(mon);
+  const freshDays = (saved.settings && saved.settings.freshDays) || 3;
+  const people = (saved.settings && saved.settings.people) || 2;
+  const dishes = (saved.dishes || []).map((d) => {
+    const date = d.dayIndex == null ? null : addDaysISO(mon, d.dayIndex);
+    const nd = {
+      id: d.id || uid(),
+      name: d.name,
+      category: d.category || "main",
+      freezable: !!d.freezable,
+      servings: d.servings || people,
+      source: d.source || "tsukurioki",
+      kid: !!d.kid,
+      weekId: wid,
+      date,
+      storage: null,
+      status: d.status || "planned",
+    };
+    if (date) nd.storage = storageForDate(nd, date, freshDays);
+    return nd;
+  });
+  return { recipes: [], dishes, settings: { people, freshDays } };
+}
+
+/* ------------------------------- storage ------------------------------- */
 const KEY = "okazu:state:v1";
 
 const hasLocal = (() => {
@@ -262,7 +288,7 @@ const hasLocal = (() => {
     window.localStorage.removeItem(probe);
     return true;
   } catch {
-    return false; // プライベートモード等で無効化されているケース
+    return false;
   }
 })();
 const hasArtifactStore = typeof window !== "undefined" && !!window.storage;
@@ -278,7 +304,7 @@ async function loadSaved() {
       return r ? JSON.parse(r.value) : null;
     }
   } catch {
-    /* 壊れたデータ等は無視して初期状態から始める */
+    /* 壊れたデータ等は無視 */
   }
   return null;
 }
@@ -302,41 +328,44 @@ async function persist(s) {
 export default function App() {
   const [state, dispatch] = useReducer(reducer, undefined, blankState);
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState("plan"); // 'plan' | 'dishes'
+  const [tab, setTab] = useState("plan"); // 'history' | 'plan' | 'dishes'
+  const [viewMonday, setViewMonday] = useState(() => mondayISO()); // 表示中の週（月曜ISO）
   const [showSettings, setShowSettings] = useState(false);
   const [sheet, setSheet] = useState(null); // { id, mode:'assign'|'move', from }
   const [toast, setToast] = useState("");
-  const [menu, setMenu] = useState({ weeks: WEEKS, updatedAt: null }); // 最新メニュー（menu.json）
+  const [menu, setMenu] = useState({ weeks: WEEKS, updatedAt: null });
+
+  const ping = (m) => setToast(m);
 
   useEffect(() => {
     (async () => {
-      // 先に最新メニュー（menu.json）を読み込む。取れなければ WEEKS をフォールバック。
       const menuData = await loadMenu();
       const weeks = menuData ? menuData.weeks : WEEKS;
       if (menuData) setMenu({ weeks, updatedAt: menuData.updatedAt });
 
       const saved = await loadSaved();
       if (saved && saved.dishes) {
-        dispatch({ type: "LOAD", payload: saved });
-        // 既存データも月曜はじまりに揃える
-        dispatch({
-          type: "SET_SETTINGS",
-          patch: { startDate: (saved.settings && saved.settings.startDate) || todayISO() },
-        });
+        const isOld =
+          !saved.recipes ||
+          (saved.dishes[0] && Object.prototype.hasOwnProperty.call(saved.dishes[0], "dayIndex"));
+        const payload = isOld ? migrateOld(saved) : saved;
+        dispatch({ type: "LOAD", payload });
+        // 直近の予定がある週を表示（なければ今週）
+        const dated = payload.dishes.filter((d) => d.date).map((d) => d.date).sort();
+        setViewMonday(dated.length ? mondayISO(dated[dated.length - 1]) : mondayISO());
       } else {
         // 初回起動：今週お届けのおかず（週3食ぶん）をストックに入れて、すぐ見える状態に
         const wk = pickCurrentWeek(weeks);
-        dispatch({ type: "SET_SETTINGS", patch: { startDate: weekStartISO(wk.id) } });
+        setViewMonday(weekStartISO(wk.id));
         const seed = wk.dishes
           .filter((d) => d.plan !== "5食")
-          .map((d) => ({ ...d, source: "tsukurioki", servings: initialSettings.people }));
+          .map((d) => ({ ...d, source: "tsukurioki", weekId: wk.id, servings: initialSettings.people }));
         dispatch({ type: "ADD_DISHES", dishes: seed });
       }
       setReady(true);
     })();
   }, []);
 
-  // 「最新メニューに更新」ボタン用：menu.json を取り直して週リストを差し替える
   const refreshMenu = async () => {
     const data = await loadMenu();
     if (data) {
@@ -359,21 +388,53 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const { dishes, settings } = state;
-  const stock = useMemo(() => dishes.filter((d) => d.dayIndex === null), [dishes]);
-  const assignedCount = dishes.length - stock.length;
+  const { dishes, recipes, settings } = state;
+  const viewWeekId = idOfMonday(viewMonday);
+  const stock = useMemo(
+    () => dishes.filter((d) => d.weekId === viewWeekId && d.date === null),
+    [dishes, viewWeekId]
+  );
+  const viewMenuWeek = useMemo(
+    () => menu.weeks.find((w) => w.id === viewWeekId) || null,
+    [menu.weeks, viewWeekId]
+  );
+  const importedCount = useMemo(
+    () => dishes.filter((d) => d.source === "tsukurioki" && d.weekId === viewWeekId).length,
+    [dishes, viewWeekId]
+  );
 
-  const warnings = useMemo(() => {
-    return dishes.filter(
-      (d) =>
-        d.dayIndex !== null &&
-        d.status !== "eaten" &&
-        d.storage === "fridge" &&
-        d.dayIndex >= settings.freshDays
-    );
-  }, [dishes, settings.freshDays]);
+  const importWeek = (include5) => {
+    const wk = menu.weeks.find((w) => w.id === viewWeekId);
+    if (!wk) return;
+    const items = wk.dishes
+      .filter((d) => include5 || d.plan !== "5食")
+      .map((d) => ({ ...d, source: "tsukurioki", weekId: wk.id, servings: settings.people }));
+    const have = new Set(dishes.filter((d) => d.weekId === wk.id).map((d) => d.name));
+    const fresh = items.filter((d) => !have.has(d.name));
+    if (fresh.length === 0) {
+      ping("この週はすでに取り込み済みです");
+      return;
+    }
+    dispatch({ type: "ADD_DISHES", dishes: fresh });
+    ping(`${fresh.length}品をストックに追加しました`);
+  };
 
-  const ping = (m) => setToast(m);
+  const placeRecipe = (recipe) => {
+    dispatch({
+      type: "ADD_DISHES",
+      dishes: [
+        {
+          name: recipe.name,
+          category: recipe.category,
+          freezable: recipe.freezable,
+          source: "home",
+          weekId: viewWeekId,
+          servings: settings.people,
+        },
+      ],
+    });
+    ping(`「${recipe.name}」を ${weekLabelFromMonday(viewMonday)} のストックへ`);
+  };
 
   return (
     <div className="om-root">
@@ -397,11 +458,19 @@ export default function App() {
       <nav className="om-tabs" role="tablist">
         <button
           role="tab"
+          aria-selected={tab === "history"}
+          className={tab === "history" ? "on" : ""}
+          onClick={() => setTab("history")}
+        >
+          <History size={16} /> りれき
+        </button>
+        <button
+          role="tab"
           aria-selected={tab === "plan"}
           className={tab === "plan" ? "on" : ""}
           onClick={() => setTab("plan")}
         >
-          <CalendarDays size={17} /> こんだて
+          <CalendarDays size={16} /> こんだて
         </button>
         <button
           role="tab"
@@ -409,59 +478,59 @@ export default function App() {
           className={tab === "dishes" ? "on" : ""}
           onClick={() => setTab("dishes")}
         >
-          <PackageOpen size={17} /> おかず
-          {dishes.length > 0 && <span className="om-count">{dishes.length}</span>}
+          <PackageOpen size={16} /> おかず
         </button>
       </nav>
 
       <main className="om-main">
-        {tab === "plan" ? (
+        {tab === "plan" && (
           <PlanView
-            state={state}
-            stock={stock}
-            assignedCount={assignedCount}
-            warnings={warnings}
-            onAuto={() => {
-              if (dishes.length === 0) {
-                setTab("dishes");
-                ping("まずはおかずを登録してね");
-                return;
-              }
-              dispatch({ type: "AUTO" });
-              ping("月曜から主菜・副菜を1品ずつ置きました");
-            }}
-            onClear={() => dispatch({ type: "CLEAR_PLAN" })}
-            onOpenSheet={(id, mode, from) => setSheet({ id, mode, from })}
-            onStatus={(id, status) => {
-              dispatch({ type: "SET_STATUS", id, status });
-            }}
-            onGoDishes={() => setTab("dishes")}
-          />
-        ) : (
-          <DishesView
             dishes={dishes}
             settings={settings}
-            weeks={menu.weeks}
-            menuUpdatedAt={menu.updatedAt}
-            onRefreshMenu={refreshMenu}
-            onLoadWeek={(items, weekId) => {
-              if (weekId)
-                dispatch({ type: "SET_SETTINGS", patch: { startDate: weekStartISO(weekId) } });
-              const have = new Set(dishes.map((d) => d.source + "::" + d.name));
-              const fresh = items.filter((d) => !have.has("tsukurioki::" + d.name));
-              if (fresh.length === 0) {
-                ping("その週のこんだてに切り替えました");
+            viewMonday={viewMonday}
+            viewWeekId={viewWeekId}
+            stock={stock}
+            viewMenuWeek={viewMenuWeek}
+            importedCount={importedCount}
+            onPrev={() => setViewMonday(addDaysISO(viewMonday, -7))}
+            onNext={() => setViewMonday(addDaysISO(viewMonday, 7))}
+            onToday={() => setViewMonday(mondayISO())}
+            onImport={importWeek}
+            onAuto={() => {
+              if (stock.length === 0 && importedCount === 0) {
+                ping("先にこの週のツクリオを取り込んでね");
                 return;
               }
-              dispatch({ type: "ADD_DISHES", dishes: fresh });
-              ping(`${fresh.length}品をストックに追加しました`);
+              dispatch({ type: "AUTO_WEEK", weekId: viewWeekId });
+              ping("月曜から主菜・副菜を1品ずつ置きました");
             }}
-            onAdd={(d) => {
-              dispatch({ type: "ADD_DISHES", dishes: [d] });
-              ping("おかずを追加しました");
+            onClear={() => dispatch({ type: "CLEAR_WEEK", weekId: viewWeekId })}
+            onOpenSheet={(id, mode, from) => setSheet({ id, mode, from })}
+            onStatus={(id, status) => dispatch({ type: "SET_STATUS", id, status })}
+            onGoDishes={() => setTab("dishes")}
+          />
+        )}
+
+        {tab === "history" && <HistoryView dishes={dishes} />}
+
+        {tab === "dishes" && (
+          <DishesView
+            dishes={dishes}
+            recipes={recipes}
+            settings={settings}
+            viewMonday={viewMonday}
+            viewWeekId={viewWeekId}
+            menuUpdatedAt={menu.updatedAt}
+            onRefreshMenu={refreshMenu}
+            onAddRecipe={(r) => {
+              dispatch({ type: "ADD_RECIPE", recipe: r });
+              ping("自作レシピに追加しました");
             }}
-            onDelete={(id) => dispatch({ type: "DELETE_DISH", id })}
-            onToggleFreeze={(id) => dispatch({ type: "TOGGLE_FREEZABLE", id })}
+            onDeleteRecipe={(id) => dispatch({ type: "DELETE_RECIPE", id })}
+            onToggleRecipeFreeze={(id) => dispatch({ type: "TOGGLE_RECIPE_FREEZE", id })}
+            onDeleteDish={(id) => dispatch({ type: "DELETE_DISH", id })}
+            onPlaceRecipe={placeRecipe}
+            onGoPlan={() => setTab("plan")}
           />
         )}
       </main>
@@ -486,8 +555,8 @@ export default function App() {
           from={sheet.from}
           settings={settings}
           dishes={dishes}
-          onPick={(dayIndex) => {
-            dispatch({ type: "ASSIGN", id: sheet.id, dayIndex });
+          onPick={(date) => {
+            dispatch({ type: "ASSIGN", id: sheet.id, date });
             setSheet(null);
             ping("ふりわけました");
           }}
@@ -507,37 +576,99 @@ export default function App() {
 
 /* ------------------------------ Plan view ------------------------------ */
 function PlanView({
-  state,
+  dishes,
+  settings,
+  viewMonday,
+  viewWeekId,
   stock,
-  assignedCount,
-  warnings,
+  viewMenuWeek,
+  importedCount,
+  onPrev,
+  onNext,
+  onToday,
+  onImport,
   onAuto,
   onClear,
   onOpenSheet,
   onStatus,
   onGoDishes,
 }) {
-  const { dishes, settings } = state;
-  const days = settings.days;
-  const todayIdx = useMemo(() => {
-    const t = todayISO();
-    for (let i = 0; i < days; i++) {
-      const d = dateForIndex(settings.startDate, i);
-      if (
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-          d.getDate()
-        ).padStart(2, "0")}` === t
-      )
-        return i;
-    }
-    return -1;
-  }, [settings.startDate, days]);
+  const [include5, setInclude5] = useState(false);
+  const weekDates = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDaysISO(viewMonday, i)),
+    [viewMonday]
+  );
+  const today = todayISO();
+  const thisMon = mondayISO();
+  const badge =
+    viewMonday === thisMon ? { t: "今週", c: "now" } : viewMonday < thisMon ? { t: "過去", c: "past" } : { t: "先の週", c: "future" };
+
+  const assignedCount = useMemo(
+    () => dishes.filter((d) => weekDates.includes(d.date)).length,
+    [dishes, weekDates]
+  );
+  const warnings = useMemo(
+    () =>
+      dishes.filter(
+        (d) =>
+          d.date &&
+          weekDates.includes(d.date) &&
+          d.status !== "eaten" &&
+          d.storage === "fridge" &&
+          !d.freezable &&
+          daysBetween(viewMonday, d.date) >= settings.freshDays
+      ),
+    [dishes, weekDates, viewMonday, settings.freshDays]
+  );
+
+  const canImport = viewMenuWeek && importedCount === 0;
+  const importCount = viewMenuWeek
+    ? viewMenuWeek.dishes.filter((d) => include5 || d.plan !== "5食").length
+    : 0;
 
   return (
     <div className="om-plan">
+      {/* 週ナビ */}
+      <div className="om-weeknav">
+        <button onClick={onPrev} aria-label="先週">
+          <ChevronLeft size={20} />
+        </button>
+        <button className="om-weeknav-c" onClick={onToday}>
+          <span className="om-weeknav-label">{weekLabelFromMonday(viewMonday)}</span>
+          <span className={"om-weeknav-badge " + badge.c}>{badge.t}</span>
+        </button>
+        <button onClick={onNext} aria-label="翌週">
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      {/* 取り込みバナー */}
+      {canImport && (
+        <div className="om-import">
+          <div className="om-import-t">
+            この週のツクリオ「{viewMenuWeek.recommend}」が未取り込みです。
+          </div>
+          <div className="om-import-row">
+            <button className="om-primary" onClick={() => onImport(include5)}>
+              <Plus size={17} /> この週を取り込む（{importCount}品）
+            </button>
+            <button
+              className={"om-mini-toggle" + (include5 ? " on" : "")}
+              onClick={() => setInclude5((v) => !v)}
+            >
+              <span className="om-switch sm" aria-hidden>
+                <span className="om-switch-knob" />
+              </span>
+              5食プランも含める
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 操作 */}
       <div className="om-actions">
         <button className="om-primary" onClick={onAuto}>
-          <Sparkles size={17} /> 1週間に自動でふりわけ
+          <Sparkles size={17} /> この週に自動でふりわけ
         </button>
         {assignedCount > 0 && (
           <button className="om-ghost" onClick={onClear}>
@@ -550,8 +681,7 @@ function PlanView({
         <div className="om-warn">
           <AlertTriangle size={16} />
           <span>
-            冷蔵のおかずが{warnings.length}品、{settings.freshDays}日目以降にあります。
-            早めに食べきりましょう。
+            冷蔵のおかずが{warnings.length}品、{settings.freshDays}日目以降にあります。早めに食べきりましょう。
           </span>
         </div>
       )}
@@ -565,13 +695,13 @@ function PlanView({
         </div>
         {stock.length === 0 ? (
           <p className="om-empty-line">
-            {dishes.length === 0 ? (
+            {importedCount === 0 && !canImport ? (
               <>
-                おかずがまだありません。
+                この週のおかずはまだありません。
                 <button className="om-link" onClick={onGoDishes}>
-                  「おかず」から登録
+                  「おかず」
                 </button>
-                してね。
+                から自作を足せます。
               </>
             ) : (
               "すべてふりわけ済みです 🎉"
@@ -580,11 +710,7 @@ function PlanView({
         ) : (
           <div className="om-chips">
             {stock.map((d) => (
-              <button
-                key={d.id}
-                className="om-chip"
-                onClick={() => onOpenSheet(d.id, "assign")}
-              >
+              <button key={d.id} className="om-chip" onClick={() => onOpenSheet(d.id, "assign")}>
                 <DishDot d={d} />
                 <span className="om-chip-name">{d.name}</span>
                 {d.freezable ? (
@@ -601,36 +727,29 @@ function PlanView({
       {/* 週ボード */}
       <div className="om-scrollhint">← 横にスクロールして1週間 →</div>
       <div className="om-board">
-        {Array.from({ length: days }).map((_, i) => {
-          const date = dateForIndex(settings.startDate, i);
-          const items = dishes.filter((d) => d.dayIndex === i);
-          return (
-            <DayCard
-              key={i}
-              i={i}
-              date={date}
-              isToday={i === todayIdx}
-              items={items}
-              onOpenSheet={onOpenSheet}
-              onStatus={onStatus}
-            />
-          );
-        })}
+        {weekDates.map((iso) => (
+          <DayCard
+            key={iso}
+            iso={iso}
+            isToday={iso === today}
+            items={dishes.filter((d) => d.date === iso)}
+            onOpenSheet={onOpenSheet}
+            onStatus={onStatus}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-function DayCard({ i, date, isToday, items, onOpenSheet, onStatus }) {
+function DayCard({ iso, isToday, items, onOpenSheet, onStatus }) {
   const mains = items.filter((d) => d.category === "main");
   const sides = items.filter((d) => d.category === "side");
   return (
     <div className={"om-day" + (isToday ? " today" : "")}>
       <div className="om-day-h">
-        <span className="om-wd">{WD[date.getDay()]}</span>
-        <span className="om-dt">
-          {date.getMonth() + 1}/{date.getDate()}
-        </span>
+        <span className="om-wd">{wdOf(iso)}</span>
+        <span className="om-dt">{fmtMD(iso)}</span>
         {isToday && <span className="om-today-tag">きょう</span>}
       </div>
       <div className="om-day-body">
@@ -638,8 +757,12 @@ function DayCard({ i, date, isToday, items, onOpenSheet, onStatus }) {
           <p className="om-day-empty">—</p>
         ) : (
           <>
-            {mains.length > 0 && <DishGroup label="主菜" items={mains} onOpenSheet={onOpenSheet} onStatus={onStatus} dayIndex={i} />}
-            {sides.length > 0 && <DishGroup label="副菜" items={sides} onOpenSheet={onOpenSheet} onStatus={onStatus} dayIndex={i} />}
+            {mains.length > 0 && (
+              <DishGroup label="主菜" items={mains} onOpenSheet={onOpenSheet} onStatus={onStatus} from={iso} />
+            )}
+            {sides.length > 0 && (
+              <DishGroup label="副菜" items={sides} onOpenSheet={onOpenSheet} onStatus={onStatus} from={iso} />
+            )}
           </>
         )}
       </div>
@@ -647,24 +770,18 @@ function DayCard({ i, date, isToday, items, onOpenSheet, onStatus }) {
   );
 }
 
-function DishGroup({ label, items, onOpenSheet, onStatus, dayIndex }) {
+function DishGroup({ label, items, onOpenSheet, onStatus, from }) {
   return (
     <div className="om-group">
       <span className="om-group-l">{label}</span>
       {items.map((d) => (
-        <PlannedDish
-          key={d.id}
-          d={d}
-          dayIndex={dayIndex}
-          onOpenSheet={onOpenSheet}
-          onStatus={onStatus}
-        />
+        <PlannedDish key={d.id} d={d} from={from} onOpenSheet={onOpenSheet} onStatus={onStatus} />
       ))}
     </div>
   );
 }
 
-function PlannedDish({ d, dayIndex, onOpenSheet, onStatus }) {
+function PlannedDish({ d, from, onOpenSheet, onStatus }) {
   const [open, setOpen] = useState(false);
   const eaten = d.status === "eaten";
   return (
@@ -684,10 +801,10 @@ function PlannedDish({ d, dayIndex, onOpenSheet, onStatus }) {
               <button onClick={() => { onStatus(d.id, "eaten"); setOpen(false); }}>
                 <Check size={14} /> 食べた
               </button>
-              <button onClick={() => { onOpenSheet(d.id, "move", dayIndex); setOpen(false); }}>
+              <button onClick={() => { onOpenSheet(d.id, "move", from); setOpen(false); }}>
                 <ArrowRight size={14} /> 後日にまわす
               </button>
-              <button onClick={() => { onOpenSheet(d.id, "assign", dayIndex); setOpen(false); }}>
+              <button onClick={() => { onOpenSheet(d.id, "assign", from); setOpen(false); }}>
                 <PackageOpen size={14} /> 別の日／ストックへ
               </button>
             </>
@@ -715,7 +832,8 @@ function DishDot({ d }) {
 /* ------------------------------ Day sheet ------------------------------ */
 function DaySheet({ dish, mode, from, settings, dishes, onPick, onUnassign, onClose }) {
   if (!dish) return null;
-  const days = settings.days;
+  const baseMon = dish.weekId ? weekStartISO(dish.weekId) : mondayISO(from || todayISO());
+  const days = Array.from({ length: 7 }, (_, i) => addDaysISO(baseMon, i));
   const title =
     mode === "move" ? "後日にまわす" : mode === "assign" && from != null ? "別の日へ移す" : "どの日に食べる？";
   return (
@@ -737,37 +855,34 @@ function DaySheet({ dish, mode, from, settings, dishes, onPick, onUnassign, onCl
 
         {mode === "move" && dish.freezable && (
           <p className="om-sheet-tip">
-            <Snowflake size={13} /> 冷凍できるので、{settings.freshDays}日目以降にまわすと長持ちします。
+            <Snowflake size={13} /> 冷凍できるので、後半にまわすと長持ちします。
           </p>
         )}
         {mode === "move" && !dish.freezable && (
           <p className="om-sheet-tip warn">
-            <AlertTriangle size={13} /> 冷蔵のみのおかずです。翌日までに食べきりましょう。
+            <AlertTriangle size={13} /> 冷蔵のみのおかずです。早めに食べきりましょう。
           </p>
         )}
 
         <div className="om-sheet-days">
-          {Array.from({ length: days }).map((_, i) => {
-            const date = dateForIndex(settings.startDate, i);
-            const load = dishes.filter((d) => d.dayIndex === i && d.id !== dish.id).length;
-            const disabled = mode === "move" && from != null && i <= from;
-            const willFreeze = dish.freezable && i >= settings.freshDays;
+          {days.map((iso) => {
+            const load = dishes.filter((d) => d.date === iso && d.id !== dish.id).length;
+            const disabled = mode === "move" && from != null && iso <= from;
+            const willFreeze = dish.freezable && daysBetween(baseMon, iso) >= settings.freshDays;
             return (
               <button
-                key={i}
-                className={"om-sheet-day" + (i === from ? " current" : "")}
+                key={iso}
+                className={"om-sheet-day" + (iso === from ? " current" : "")}
                 disabled={disabled}
-                onClick={() => onPick(i)}
+                onClick={() => onPick(iso)}
               >
-                <span className="om-sd-wd">{WD[date.getDay()]}</span>
-                <span className="om-sd-dt">
-                  {date.getMonth() + 1}/{date.getDate()}
-                </span>
+                <span className="om-sd-wd">{wdOf(iso)}</span>
+                <span className="om-sd-dt">{fmtMD(iso)}</span>
                 <span className={"om-sd-store " + (willFreeze ? "frz" : "frd")}>
                   {willFreeze ? "冷凍" : "冷蔵"}
                 </span>
                 {load > 0 && <span className="om-sd-load">{load}品</span>}
-                {i === from && <span className="om-sd-now">今ここ</span>}
+                {iso === from && <span className="om-sd-now">今ここ</span>}
               </button>
             );
           })}
@@ -783,124 +898,167 @@ function DaySheet({ dish, mode, from, settings, dishes, onPick, onUnassign, onCl
   );
 }
 
+/* ------------------------------ History view ------------------------------ */
+function HistoryView({ dishes }) {
+  const today = todayISO();
+  const [ym, setYm] = useState(() => {
+    const d = new Date(today + "T00:00:00");
+    return { y: d.getFullYear(), m: d.getMonth() };
+  });
+  const [sel, setSel] = useState(today);
+
+  const byDate = useMemo(() => {
+    const map = {};
+    for (const d of dishes) {
+      if (d.date) (map[d.date] = map[d.date] || []).push(d);
+    }
+    return map;
+  }, [dishes]);
+
+  const first = new Date(ym.y, ym.m, 1);
+  const startOffset = (first.getDay() + 6) % 7; // 月曜からの日数
+  const gridStart = addDaysISO(isoOf(first), -startOffset);
+  const cells = Array.from({ length: 42 }, (_, i) => addDaysISO(gridStart, i));
+  const selItems = byDate[sel] || [];
+  const selMains = selItems.filter((d) => d.category === "main");
+  const selSides = selItems.filter((d) => d.category === "side");
+
+  const prevM = () => setYm((s) => (s.m === 0 ? { y: s.y - 1, m: 11 } : { y: s.y, m: s.m - 1 }));
+  const nextM = () => setYm((s) => (s.m === 11 ? { y: s.y + 1, m: 0 } : { y: s.y, m: s.m + 1 }));
+
+  return (
+    <div className="om-history">
+      <div className="om-cal">
+        <div className="om-cal-nav">
+          <button onClick={prevM} aria-label="前の月">
+            <ChevronLeft size={18} />
+          </button>
+          <div className="om-cal-title">
+            {ym.y}年{ym.m + 1}月
+          </div>
+          <button onClick={nextM} aria-label="次の月">
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        <div className="om-cal-head">
+          {["月", "火", "水", "木", "金", "土", "日"].map((w) => (
+            <span key={w}>{w}</span>
+          ))}
+        </div>
+        <div className="om-cal-grid">
+          {cells.map((iso) => {
+            const d = new Date(iso + "T00:00:00");
+            const inMonth = d.getMonth() === ym.m;
+            const has = (byDate[iso] || []).length > 0;
+            return (
+              <button
+                key={iso}
+                className={
+                  "om-cal-cell" +
+                  (inMonth ? "" : " out") +
+                  (iso === today ? " today" : "") +
+                  (iso === sel ? " sel" : "")
+                }
+                onClick={() => setSel(iso)}
+              >
+                <span className="om-cal-d">{d.getDate()}</span>
+                {has && <span className="om-cal-dot" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="om-cal-detail">
+        <div className="om-cal-detail-h">
+          {fmtMD(sel)}（{wdOf(sel)}）の献立
+        </div>
+        {selItems.length === 0 ? (
+          <p className="om-cal-empty">この日の記録はありません。</p>
+        ) : (
+          <>
+            {selMains.length > 0 && <HistoryGroup label="主菜" items={selMains} />}
+            {selSides.length > 0 && <HistoryGroup label="副菜" items={selSides} />}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HistoryGroup({ label, items }) {
+  return (
+    <div className="om-cal-group">
+      <span className="om-group-l">{label}</span>
+      {items.map((d) => (
+        <div key={d.id} className={"om-cal-item" + (d.status === "eaten" ? " eaten" : "")}>
+          <span className={"om-row-store " + (d.storage === "frozen" ? "frz" : "frd")}>
+            {d.storage === "frozen" ? <Snowflake size={12} /> : <Refrigerator size={12} />}
+            {d.storage === "frozen" ? "冷凍" : "冷蔵"}
+          </span>
+          <span className="om-cal-item-name">{d.name}</span>
+          {d.status === "eaten" && <Check size={14} className="om-eaten-i" />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ------------------------------ Dishes view ------------------------------ */
 function DishesView({
   dishes,
+  recipes,
   settings,
-  weeks,
+  viewMonday,
+  viewWeekId,
   menuUpdatedAt,
   onRefreshMenu,
-  onLoadWeek,
-  onAdd,
-  onDelete,
-  onToggleFreeze,
+  onAddRecipe,
+  onDeleteRecipe,
+  onToggleRecipeFreeze,
+  onDeleteDish,
+  onPlaceRecipe,
+  onGoPlan,
 }) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("main");
   const [freezable, setFreezable] = useState(false);
-  const [source, setSource] = useState("tsukurioki");
-  const [weekId, setWeekId] = useState(() => pickCurrentWeek(weeks).id);
-  const [include5, setInclude5] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  // menu.json が後から読み込まれて週が入れ替わったら、選択を今週に寄せる
-  useEffect(() => {
-    if (!weeks.some((w) => w.id === weekId)) setWeekId(pickCurrentWeek(weeks).id);
-  }, [weeks]);
-
-  const week = weeks.find((w) => w.id === weekId) || weeks[0];
-  const preview = week.dishes.filter((d) => include5 || d.plan !== "5食");
 
   const submit = () => {
     if (!name.trim()) return;
-    onAdd({ name, category, freezable, source, servings: settings.people });
+    onAddRecipe({ name, category, freezable });
     setName("");
     setFreezable(false);
   };
 
-  const loadWeek = () => {
-    onLoadWeek(
-      preview.map((d) => ({ ...d, source: "tsukurioki", servings: settings.people })),
-      week.id
-    );
-  };
-
-  const tsuk = dishes.filter((d) => d.source === "tsukurioki");
-  const home = dishes.filter((d) => d.source === "home");
+  const weekTsuk = dishes.filter((d) => d.source === "tsukurioki" && d.weekId === viewWeekId);
 
   return (
     <div className="om-dishes">
-      {/* お届け週から読み込む */}
-      <section className="om-card">
-        <h2 className="om-h2">
-          <Sparkles size={15} className="om-h2-i" /> お届け週から読み込む
-        </h2>
-        <p className="om-card-sub">
-          ツクリオ公式メニューの主菜・副菜を、冷凍可否つきでまとめて登録します。
-        </p>
-
-        <div className="om-menu-update">
-          <span className="om-menu-date">
-            メニュー更新日：
-            {menuUpdatedAt ? new Date(menuUpdatedAt).toLocaleDateString("ja-JP") : "—（内蔵データ）"}
-          </span>
-          <button
-            className="om-refresh"
-            disabled={refreshing}
-            onClick={async () => {
-              setRefreshing(true);
-              await onRefreshMenu();
-              setRefreshing(false);
-            }}
-          >
-            <RefreshCw size={14} className={refreshing ? "om-spin" : ""} />
-            {refreshing ? "更新中…" : "最新メニューに更新"}
-          </button>
-        </div>
-
-        <div className="om-week-pick">
-          {weeks.map((w) => (
-            <button
-              key={w.id}
-              className={"om-week" + (w.id === weekId ? " on" : "")}
-              onClick={() => setWeekId(w.id)}
-            >
-              <span className="om-week-d">{w.label}</span>
-              <span className="om-week-r">おすすめ：{w.recommend}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="om-week-preview">
-          {preview.map((d) => (
-            <span key={d.name} className={"om-prev " + (d.freezable ? "frz" : "frd")}>
-              {d.freezable ? <Snowflake size={11} /> : <Refrigerator size={11} />}
-              {d.name}
-            </span>
-          ))}
-        </div>
-
+      {/* メニュー更新 */}
+      <div className="om-menu-update">
+        <span className="om-menu-date">
+          メニュー更新日：
+          {menuUpdatedAt ? new Date(menuUpdatedAt).toLocaleDateString("ja-JP") : "—（内蔵データ）"}
+        </span>
         <button
-          className={"om-mini-toggle" + (include5 ? " on" : "")}
-          onClick={() => setInclude5((v) => !v)}
+          className="om-refresh"
+          disabled={refreshing}
+          onClick={async () => {
+            setRefreshing(true);
+            await onRefreshMenu();
+            setRefreshing(false);
+          }}
         >
-          <span className="om-switch sm" aria-hidden>
-            <span className="om-switch-knob" />
-          </span>
-          5食プラン限定・倍量メニューも含める
+          <RefreshCw size={14} className={refreshing ? "om-spin" : ""} />
+          {refreshing ? "更新中…" : "最新メニューに更新"}
         </button>
+      </div>
 
-        <button className="om-primary wide" onClick={loadWeek}>
-          <Plus size={17} /> この週のこんだてにする（{preview.length}品）
-        </button>
-        <p className="om-src-note">
-          出典：ツクリオ公式お届けメニュー（毎日自動取得）。冷凍可否は公式の「冷凍不可」表示にもとづきます。
-        </p>
-      </section>
-
-      {/* 手動で追加 */}
+      {/* じぶんで追加（自作レシピ） */}
       <section className="om-card">
-        <h2 className="om-h2">じぶんで追加</h2>
+        <h2 className="om-h2">じぶんで追加（自作レシピ）</h2>
         <input
           className="om-input"
           placeholder="おかずの名前（例：肉じゃが）"
@@ -908,7 +1066,6 @@ function DishesView({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
         />
-
         <div className="om-seg-row">
           <Seg
             options={[
@@ -919,7 +1076,6 @@ function DishesView({
             onChange={setCategory}
           />
         </div>
-
         <button
           className={"om-freeze-toggle" + (freezable ? " on" : "")}
           onClick={() => setFreezable((v) => !v)}
@@ -930,68 +1086,84 @@ function DishesView({
             <span className="om-switch-knob" />
           </span>
         </button>
-
-        <div className="om-seg-row">
-          <Seg
-            options={[
-              ["tsukurioki", "ツクリオ"],
-              ["home", "自作"],
-            ]}
-            value={source}
-            onChange={setSource}
-          />
-        </div>
-
         <button className="om-primary wide" onClick={submit} disabled={!name.trim()}>
-          <Plus size={17} /> 追加する
+          <Plus size={17} /> レシピ帳に追加
         </button>
       </section>
 
-      {dishes.length === 0 ? (
-        <p className="om-empty">
-          登録したおかずがここに並びます。ツクリオで届いたものも、自分で作ったものも、
-          まとめて管理できます。
-        </p>
-      ) : (
-        <>
-          {tsuk.length > 0 && (
-            <DishList title="ツクリオ" items={tsuk} onDelete={onDelete} onToggleFreeze={onToggleFreeze} />
-          )}
-          {home.length > 0 && (
-            <DishList title="自作" items={home} onDelete={onDelete} onToggleFreeze={onToggleFreeze} />
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-function DishList({ title, items, onDelete, onToggleFreeze }) {
-  return (
-    <section className="om-list">
-      <div className="om-list-h">
-        {title} <em>{items.length}品</em>
-      </div>
-      {items.map((d) => (
-        <div key={d.id} className="om-row">
-          <DishDot d={d} />
-          <span className="om-row-cat">{d.category === "main" ? "主菜" : "副菜"}</span>
-          <span className="om-row-name">{d.name}</span>
-          {d.kid && <span className="om-kid">子</span>}
-          <button
-            className={"om-row-store " + (d.freezable ? "frz" : "frd")}
-            onClick={() => onToggleFreeze(d.id)}
-            title="冷蔵／冷凍を切りかえ"
-          >
-            {d.freezable ? <Snowflake size={13} /> : <Refrigerator size={13} />}
-            {d.freezable ? "冷凍可" : "冷蔵"}
-          </button>
-          <button className="om-row-del" onClick={() => onDelete(d.id)} aria-label="削除">
-            <Trash2 size={15} />
-          </button>
+      {/* ツクリオ（選択中の週） */}
+      <section className="om-list">
+        <div className="om-list-h">
+          ツクリオ
+          <span className="om-list-wk">
+            <CalendarDays size={11} style={{ verticalAlign: "-1px", marginRight: 2 }} />
+            {weekLabelFromMonday(viewMonday)}週
+          </span>
+          <span className="om-list-sub">こんだてで選択中</span>
         </div>
-      ))}
-    </section>
+        {weekTsuk.length === 0 ? (
+          <p className="om-list-empty">
+            この週のツクリオは未取り込みです。
+            <button className="om-link" onClick={onGoPlan}>
+              「こんだて」
+            </button>
+            で取り込めます。
+          </p>
+        ) : (
+          weekTsuk.map((d) => (
+            <div key={d.id} className="om-row">
+              <DishDot d={d} />
+              <span className="om-row-cat">{d.category === "main" ? "主菜" : "副菜"}</span>
+              <span className="om-row-name">{d.name}</span>
+              <span className={"om-row-store static " + (d.freezable ? "frz" : "frd")}>
+                {d.freezable ? <Snowflake size={13} /> : <Refrigerator size={13} />}
+                {d.freezable ? "冷凍可" : "冷蔵"}
+              </span>
+              <button className="om-row-del" onClick={() => onDeleteDish(d.id)} aria-label="削除">
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))
+        )}
+      </section>
+
+      {/* 自作（レシピ帳） */}
+      <section className="om-list">
+        <div className="om-list-h">
+          自作（レシピ帳）
+          <span className="om-list-sub">いつでも置ける</span>
+        </div>
+        {recipes.length === 0 ? (
+          <p className="om-list-empty">上の「じぶんで追加」で、よく作るおかずを登録できます。</p>
+        ) : (
+          recipes.map((r) => (
+            <div key={r.id} className="om-row">
+              <DishDot d={r} />
+              <span className="om-row-cat">{r.category === "main" ? "主菜" : "副菜"}</span>
+              <span className="om-row-name">{r.name}</span>
+              <button
+                className={"om-row-store " + (r.freezable ? "frz" : "frd")}
+                onClick={() => onToggleRecipeFreeze(r.id)}
+                title="冷蔵／冷凍を切りかえ"
+              >
+                {r.freezable ? <Snowflake size={13} /> : <Refrigerator size={13} />}
+                {r.freezable ? "冷凍可" : "冷蔵"}
+              </button>
+              <button className="om-row-add" onClick={() => onPlaceRecipe(r)} title="今の週に追加">
+                <Plus size={13} /> 今の週へ
+              </button>
+              <button className="om-row-del" onClick={() => onDeleteRecipe(r.id)} aria-label="削除">
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))
+        )}
+      </section>
+
+      <p className="om-src-note">
+        出典：ツクリオ公式お届けメニュー（毎週金曜に自動取得）。冷凍可否は公式の「冷凍不可」表示にもとづきます。
+      </p>
+    </div>
   );
 }
 
@@ -1007,30 +1179,6 @@ function SettingsSheet({ settings, onChange, onReset, onClose }) {
           <button className="om-icon sm" onClick={onClose} aria-label="閉じる">
             <X size={18} />
           </button>
-        </div>
-
-        <label className="om-field">
-          <span>お届け日（週のはじめ・毎週月曜）</span>
-          <input
-            type="date"
-            className="om-input"
-            value={settings.startDate}
-            onChange={(e) => onChange({ startDate: e.target.value })}
-          />
-          <small className="om-hint">どの曜日を選んでも、その週の月曜はじまりに調整されます。</small>
-        </label>
-
-        <div className="om-field">
-          <span>ふりわける日数</span>
-          <Seg
-            options={[
-              [5, "5日"],
-              [6, "6日"],
-              [7, "7日"],
-            ]}
-            value={settings.days}
-            onChange={(v) => onChange({ days: v })}
-          />
         </div>
 
         <div className="om-field">
@@ -1066,7 +1214,7 @@ function SettingsSheet({ settings, onChange, onReset, onClose }) {
           </button>
         ) : (
           <div className="om-confirm">
-            <span>登録したおかずと献立を全部消します。よろしいですか？</span>
+            <span>登録したおかず・レシピ・献立を全部消します。よろしいですか？</span>
             <div>
               <button className="om-ghost" onClick={() => setConfirm(false)}>
                 やめる
@@ -1087,11 +1235,7 @@ function Seg({ options, value, onChange }) {
   return (
     <div className="om-seg" role="group">
       {options.map(([v, label]) => (
-        <button
-          key={String(v)}
-          className={value === v ? "on" : ""}
-          onClick={() => onChange(v)}
-        >
+        <button key={String(v)} className={value === v ? "on" : ""} onClick={() => onChange(v)}>
           {label}
         </button>
       ))}
@@ -1129,16 +1273,35 @@ const CSS = `
 .om-icon:hover{color:var(--ink);}
 
 /* tabs */
-.om-tabs{display:flex; gap:8px; padding:0 18px 12px; position:sticky; top:0; z-index:5;
+.om-tabs{display:flex; gap:6px; padding:0 18px 12px; position:sticky; top:0; z-index:5;
   background:linear-gradient(var(--bg),var(--bg) 70%, transparent);}
-.om-tabs button{flex:1; display:flex; align-items:center; justify-content:center; gap:7px;
-  padding:11px; border:1px solid var(--line); background:var(--card); color:var(--ink2);
-  border-radius:13px; font-weight:700; font-size:14px;}
+.om-tabs button{flex:1; display:flex; align-items:center; justify-content:center; gap:5px;
+  padding:11px 6px; border:1px solid var(--line); background:var(--card); color:var(--ink2);
+  border-radius:13px; font-weight:700; font-size:13.5px;}
 .om-tabs button.on{background:var(--ink); color:#fff; border-color:var(--ink);}
 .om-count{background:var(--accent); color:#fff; font-size:11px; border-radius:9px; padding:1px 6px; font-weight:800;}
 .om-tabs button.on .om-count{background:rgba(255,255,255,.22);}
 
 .om-main{padding:4px 18px 0;}
+
+/* week nav */
+.om-weeknav{display:flex; align-items:center; gap:8px; margin:6px 0 12px;}
+.om-weeknav>button{width:42px;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card);
+  color:var(--ink2);display:grid;place-items:center;flex:none;}
+.om-weeknav>button:hover{color:var(--ink);border-color:var(--ink2);}
+.om-weeknav-c{flex:1;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:7px;
+  display:flex;flex-direction:column;align-items:center;gap:1px;}
+.om-weeknav-label{font-size:18px;font-weight:800;letter-spacing:.02em;}
+.om-weeknav-badge{font-size:10px;font-weight:800;padding:2px 9px;border-radius:8px;}
+.om-weeknav-badge.now{background:var(--accent);color:#fff;}
+.om-weeknav-badge.past{background:#EDEAE2;color:var(--ink2);}
+.om-weeknav-badge.future{background:var(--frozen-bg);color:var(--frozen);}
+
+/* import banner */
+.om-import{background:var(--accent-bg);border:1px solid #EAD6B5;border-radius:14px;padding:12px 13px;margin-bottom:12px;}
+.om-import-t{font-size:12.5px;font-weight:700;color:#9A5B16;line-height:1.5;margin-bottom:10px;}
+.om-import-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.om-import-row .om-primary{flex:0 1 auto;box-shadow:0 4px 10px rgba(214,133,47,.22);}
 
 /* actions */
 .om-actions{display:flex; gap:10px; align-items:center; margin:6px 0 12px;}
@@ -1162,7 +1325,7 @@ const CSS = `
 .om-shelf{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:13px; margin-bottom:14px;}
 .om-shelf-h{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; color:var(--ink2); margin-bottom:10px;}
 .om-shelf-h em{margin-left:auto; font-style:normal; color:var(--accent); font-weight:800;}
-.om-empty-line{font-size:12.5px; color:var(--ink2); margin:2px 0 0;}
+.om-empty-line{font-size:12.5px; color:var(--ink2); margin:2px 0 0; line-height:1.6;}
 .om-link{background:none;border:none;color:var(--accent);font-weight:800;padding:0;text-decoration:underline;}
 .om-chips{display:flex; flex-wrap:wrap; gap:8px;}
 .om-chip{display:inline-flex; align-items:center; gap:7px; background:#FAF8F3; border:1px solid var(--line);
@@ -1236,17 +1399,7 @@ const CSS = `
 .om-freeze-toggle.on .om-switch-knob{left:19.5px;}
 .om-card-sub{font-size:12px; color:var(--ink2); margin:0 0 12px; line-height:1.55;}
 .om-h2-i{vertical-align:-2px; color:var(--accent); margin-right:3px;}
-.om-week-pick{display:flex; gap:8px; margin-bottom:12px;}
-.om-week{flex:1; text-align:left; background:#FAF8F3; border:1.5px solid var(--line); border-radius:13px; padding:10px 12px;
-  display:flex; flex-direction:column; gap:3px;}
-.om-week.on{border-color:var(--accent); background:var(--accent-bg);}
-.om-week-d{font-weight:800; font-size:14px;}
-.om-week-r{font-size:10.5px; color:var(--ink2); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.om-week-preview{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:13px;}
-.om-prev{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:5px 8px; border-radius:8px;}
-.om-prev.frd{background:var(--fresh-bg); color:var(--fresh);}
-.om-prev.frz{background:var(--frozen-bg); color:var(--frozen);}
-.om-mini-toggle{display:flex; align-items:center; gap:9px; background:none; border:none; padding:4px 0 12px;
+.om-mini-toggle{display:flex; align-items:center; gap:9px; background:none; border:none; padding:4px 0;
   font-size:12.5px; font-weight:700; color:var(--ink2);}
 .om-mini-toggle.on{color:var(--frozen);}
 .om-switch.sm{width:34px; height:20px;}
@@ -1254,7 +1407,7 @@ const CSS = `
 .om-mini-toggle.on .om-switch{background:var(--frozen);}
 .om-mini-toggle.on .om-switch.sm .om-switch-knob{left:16.5px;}
 .om-src-note{font-size:10.5px; color:var(--ink2); line-height:1.55; margin:11px 0 0; opacity:.85;}
-.om-menu-update{display:flex; align-items:center; gap:8px; justify-content:space-between; margin:0 0 12px; flex-wrap:wrap;}
+.om-menu-update{display:flex; align-items:center; gap:8px; justify-content:space-between; margin:6px 0 12px; flex-wrap:wrap;}
 .om-menu-date{font-size:11px; color:var(--ink2); font-weight:700;}
 .om-refresh{display:inline-flex; align-items:center; gap:6px; background:var(--frozen-bg); color:var(--frozen);
   border:1px solid #CFE0EA; border-radius:11px; padding:8px 12px; font-weight:800; font-size:12px;}
@@ -1265,10 +1418,12 @@ const CSS = `
 .om-kid{font-size:10px; font-weight:800; color:var(--accent); background:var(--accent-bg); padding:2px 6px; border-radius:6px; flex-shrink:0;}
 .om-empty{font-size:13px; color:var(--ink2); line-height:1.7; text-align:center; padding:24px 12px;}
 
-/* dish list */
+/* dish / recipe list */
 .om-list{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:8px 12px; margin-bottom:12px;}
-.om-list-h{font-size:12.5px; font-weight:800; color:var(--ink2); padding:9px 4px 8px; border-bottom:1px solid var(--line);}
-.om-list-h em{font-style:normal; color:var(--accent); margin-left:6px;}
+.om-list-h{display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:var(--ink2); padding:9px 4px 8px; border-bottom:1px solid var(--line);}
+.om-list-wk{font-size:10px;font-weight:800;color:var(--frozen);background:var(--frozen-bg);padding:2px 7px;border-radius:7px;}
+.om-list-sub{font-size:10px;color:#A7A296;font-weight:600;margin-left:auto;}
+.om-list-empty{font-size:12px; color:var(--ink2); line-height:1.6; padding:12px 4px;}
 .om-row{display:flex; align-items:center; gap:9px; padding:11px 4px; border-bottom:1px solid var(--line);}
 .om-row:last-child{border-bottom:none;}
 .om-row-cat{font-size:10px; font-weight:800; color:var(--ink2); background:#F1EEE6; padding:2px 6px; border-radius:6px; flex-shrink:0;}
@@ -1276,8 +1431,38 @@ const CSS = `
 .om-row-store{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:800; padding:5px 9px; border-radius:9px; border:1px solid transparent; flex-shrink:0;}
 .om-row-store.frd{background:var(--fresh-bg); color:var(--fresh);}
 .om-row-store.frz{background:var(--frozen-bg); color:var(--frozen);}
+.om-row-store.static{cursor:default;}
+.om-row-add{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:5px 9px;border-radius:9px;border:1px solid var(--line);background:#FAF8F3;color:var(--accent);flex-shrink:0;}
+.om-row-add:hover{background:var(--accent-bg);border-color:var(--accent);}
 .om-row-del{background:none; border:none; color:#C9C3B6; padding:5px; flex-shrink:0;}
 .om-row-del:hover{color:var(--warn);}
+
+/* history calendar */
+.om-history{padding-bottom:20px;}
+.om-cal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin:6px 0 12px;}
+.om-cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.om-cal-nav>button{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink2);display:grid;place-items:center;}
+.om-cal-nav>button:hover{color:var(--ink);border-color:var(--ink2);}
+.om-cal-title{flex:1;text-align:center;font-size:16px;font-weight:800;}
+.om-cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
+.om-cal-head span{text-align:center;font-size:10px;font-weight:800;color:var(--ink2);}
+.om-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.om-cal-cell{position:relative;aspect-ratio:1/1;border:1px solid transparent;border-radius:9px;background:#FAF8F3;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;}
+.om-cal-cell.out{opacity:.32;}
+.om-cal-cell.today{border-color:var(--accent);}
+.om-cal-cell.sel{background:var(--accent-bg);border-color:var(--accent);}
+.om-cal-d{font-size:12px;font-weight:700;}
+.om-cal-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);}
+.om-cal-detail{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;}
+.om-cal-detail-h{font-size:13.5px;font-weight:800;margin-bottom:10px;}
+.om-cal-empty{font-size:12.5px;color:var(--ink2);margin:2px 0;}
+.om-cal-group{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+.om-cal-group:last-child{margin-bottom:0;}
+.om-cal-item{display:flex;align-items:center;gap:8px;}
+.om-cal-item-name{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.om-cal-item.eaten .om-cal-item-name{text-decoration:line-through;color:var(--ink2);}
+.om-cal-item .om-eaten-i{margin-left:auto;}
 
 /* modal / sheet */
 .om-modal-wrap{position:fixed; inset:0; background:rgba(36,32,28,.42); z-index:30;
