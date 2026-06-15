@@ -383,9 +383,20 @@ function App() {
           (saved.dishes[0] && Object.prototype.hasOwnProperty.call(saved.dishes[0], "dayIndex"));
         const payload = isOld ? migrateOld(saved) : saved;
         dispatch({ type: "LOAD", payload });
-        // 直近の予定がある週を表示（なければ今週）
+        // 中身のある週を表示する（空の今週に着地して「何も無い」を防ぐ）。
+        // 優先: 予定済みの最新週 → ストックがある最新週 → メニューの最新週 → 今週
         const dated = payload.dishes.filter((d) => d.date).map((d) => d.date).sort();
-        setViewMonday(dated.length ? mondayISO(dated[dated.length - 1]) : mondayISO());
+        const stockWeeks = payload.dishes
+          .map((d) => d.weekId)
+          .filter(Boolean)
+          .map((id) => weekStartISO(id))
+          .sort();
+        let target;
+        if (dated.length) target = mondayISO(dated[dated.length - 1]);
+        else if (stockWeeks.length) target = mondayISO(stockWeeks[stockWeeks.length - 1]);
+        else if (weeks.length) target = weekStartISO(pickCurrentWeek(weeks).id);
+        else target = mondayISO();
+        setViewMonday(target);
       } else {
         // 初回起動：今週お届けのおかず（週3食ぶん）をストックに入れて、すぐ見える状態に
         const wk = pickCurrentWeek(weeks);
@@ -525,9 +536,11 @@ function App() {
             stock={stock}
             viewMenuWeek={viewMenuWeek}
             importedCount={importedCount}
+            latestMenuMonday={menu.weeks.length ? weekStartISO(pickCurrentWeek(menu.weeks).id) : null}
             onPrev={() => setViewMonday(addDaysISO(viewMonday, -7))}
             onNext={() => setViewMonday(addDaysISO(viewMonday, 7))}
             onToday={() => setViewMonday(mondayISO())}
+            onGoLatestMenu={() => setViewMonday(weekStartISO(pickCurrentWeek(menu.weeks).id))}
             onImport={importWeek}
             onAuto={() => {
               if (stock.length === 0 && importedCount === 0) {
@@ -616,9 +629,11 @@ function PlanView({
   stock,
   viewMenuWeek,
   importedCount,
+  latestMenuMonday,
   onPrev,
   onNext,
   onToday,
+  onGoLatestMenu,
   onImport,
   onAuto,
   onClear,
@@ -727,19 +742,26 @@ function PlanView({
           <em>{stock.length}品</em>
         </div>
         {stock.length === 0 ? (
-          <p className="om-empty-line">
-            {importedCount === 0 && !canImport ? (
-              <>
-                この週のおかずはまだありません。
-                <button className="om-link" onClick={onGoDishes}>
-                  「おかず」
-                </button>
-                から自作を足せます。
-              </>
-            ) : (
-              "すべてふりわけ済みです 🎉"
+          <>
+            <p className="om-empty-line">
+              {importedCount === 0 && !canImport ? (
+                <>
+                  この週のおかずはまだありません。
+                  <button className="om-link" onClick={onGoDishes}>
+                    「おかず」
+                  </button>
+                  から自作を足せます。
+                </>
+              ) : (
+                "すべてふりわけ済みです 🎉"
+              )}
+            </p>
+            {importedCount === 0 && !canImport && latestMenuMonday && latestMenuMonday !== viewMonday && (
+              <button className="om-primary wide" onClick={onGoLatestMenu}>
+                <CalendarDays size={16} /> ツクリオ最新メニュー（{weekLabelFromMonday(latestMenuMonday)}）へ
+              </button>
             )}
-          </p>
+          </>
         ) : (
           <div className="om-chips">
             {stock.map((d) => (
