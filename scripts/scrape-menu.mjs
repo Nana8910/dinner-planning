@@ -1,31 +1,30 @@
 // @ts-check
 /*
- * ツクリオ公式メニュー(https://www.tsukurioki.jp/menu/<YYYYMMDD>)を取得して
- * アプリが読む menu.json を生成するスクレイパ。GitHub Actions(Node 20+)で実行する想定。
+ * ツクリオ公式メニューを取得して menu.json を生成するスクレイパ。
+ * GitHub Actions(Node 20+)で実行する想定。
  *
- * 仕様メモ（2026-06 時点の実HTML構造にもとづく）:
- *  - 各週ページに「３食プラン」「５食プラン」の2つの <table> がある。
- *  - 各表は <tr> ごとに「主菜 / 副菜」のラベルセルと、おかず名を <br> 区切りで並べた内容セルを持つ。
- *  - おかず名に「（冷凍不可）」が付くものだけ冷凍不可。ほかは冷凍可とみなす。
- *  - 「【倍量】」は3食と同じ品の倍量表記なので前置きを除去して同一品として扱う。
- *  - 5食プランにしか無い品（差分）に plan:"5食" を付ける。
- *  - <title> 例: 今週のおすすめ「みそ旨チーズタッカルビ」｜2026年4月27日週お届けメニュー
+ * 取得元（2026-06 時点）: 月単位ページ https://www.tsuklio.com/menu/<YYYYMM>/
+ *  - 各週は <div id="weekly-menu-N"> セクション。<h4> に「6月15日〜6月21日」。
+ *  - セクション内に「主菜」「副菜」ラベル＋ data-name="menu-card" のカードが並ぶ。
+ *  - カード: 料理名は <p class="text-more-16 font-tgs-bold">、冷凍不可は <img alt="冷凍不可">、
+ *    5食プラン限定は <span ...>5食プラン限定</span>（倍量は基本メニュー扱い）。
+ *  - 当月＋翌月を取得（翌月が未公開なら404でスキップ）。
  *
- * フェイルセーフ: ある週が0品になった場合は既存 menu.json の該当週を温存。
- *                 全週が空なら何も書かない（既存維持）。
+ * 冷凍可否ルール: 「冷凍不可」が付くものだけ false、ほかは true。
+ * フェイルセーフ: 有効な週が1つも取れなければ menu.json は更新しない。
  */
 
 import { readFile, writeFile } from "node:fs/promises";
 
-const BASE = "https://www.tsukurioki.jp";
-const LIST_URL = `${BASE}/menu`;
-const KEEP_WEEKS = 6;
+const BASE = "https://www.tsuklio.com";
+const KEEP_WEEKS = 10;
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
 const OUT = new URL("../menu.json", import.meta.url);
 
 /* ----------------------------- fetch helpers ----------------------------- */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function getText(url, attempt = 1) {
   try {
     const res = await fetch(url, {
@@ -41,7 +40,6 @@ async function getText(url, attempt = 1) {
     throw e;
   }
 }
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ------------------------------ html helpers ------------------------------ */
 function decodeEntities(s) {
@@ -56,21 +54,13 @@ function decodeEntities(s) {
 function stripTags(html) {
   return decodeEntities(html.replace(/<[^>]*>/g, "")).replace(/\s+/g, " ").trim();
 }
-function matchAll(re, s) {
-  const out = [];
-  let m;
-  while ((m = re.exec(s))) out.push(m);
-  return out;
-}
 
 /* ------------------------------ date helpers ------------------------------ */
-function isoOf(d) {
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${m}-${day}`;
+function pad2(n) {
+  return String(n).padStart(2, "0");
 }
 function weekLabel(id) {
-  // "20260427" -> "4/27〜5/3"
+  // "20260615" -> "6/15〜6/21"
   const y = +id.slice(0, 4),
     mo = +id.slice(4, 6),
     da = +id.slice(6, 8);
@@ -81,156 +71,138 @@ function weekLabel(id) {
 }
 
 /* ------------------------------ menu parsing ------------------------------ */
-// 1行のおかず文字列 -> { name, freezable } / 無効なら null
-function parseDishLine(raw) {
-  let name = stripTags(raw).trim();
-  if (!name) return null;
-  if (/^(&nbsp;| )?$/.test(name)) return null;
-  const freezable = !/冷凍不可/.test(name);
-  name = name
-    .replace(/（冷凍不可）|\(冷凍不可\)/g, "")
-    .replace(/^【[^】]*】/, "") // 【倍量】等の前置きを除去
-    .trim();
-  if (!name) return null;
-  return { name, freezable };
+// 1枚のカードHTML -> { name, freezable, plan? } / 無効なら null
+function parseCard(cardHtml, category) {
+  const c = cardHtml.slice(0, 1800); // 自カードの範囲に限定
+  let name = null;
+  const pm = c.match(/<p class="text-more-16 font-tgs-bold[^"]*">([^<]+)<\/p>/);
+  if (pm) name = decodeEntities(pm[1]).trim();
+  if (!name) {
+    const am = c.match(/alt="([^"]+)"/); // サムネ img の alt = 料理名
+    if (am) name = decodeEntities(am[1]).trim();
+  }
+  if (!name || name === "冷凍不可") return null;
+  const freezable = !/alt="冷凍不可"/.test(c);
+  const plan = /5食プラン限定/.test(c) ? "5食" : undefined;
+  const d = { name, category, freezable };
+  if (plan) d.plan = plan;
+  return d;
 }
 
-// 1つの <table> -> [{ name, category, freezable }]
-function parseTable(tableHtml) {
-  const rows = matchAll(/<tr[\s\S]*?<\/tr>/gi, tableHtml).map((m) => m[0]);
-  const dishes = [];
-  for (const row of rows) {
-    const cells = matchAll(/<td[\s\S]*?<\/td>/gi, row).map((m) => m[0]);
-    if (cells.length < 2) continue;
-    // ラベルセル（主菜/副菜）と内容セルを判定
-    let category = null;
-    let contentCell = null;
-    for (const cell of cells) {
-      const txt = stripTags(cell);
-      if (/^主菜$/.test(txt)) category = "main";
-      else if (/^副菜$/.test(txt)) category = "side";
-      else if (/<br/i.test(cell) || txt.length > 0) contentCell = cell;
+// 1セクション(=1週)の主菜/副菜カードを取り出す
+function parseCategoryCards(sectionHtml, category) {
+  const cards = sectionHtml.split('data-name="menu-card"').slice(1);
+  const out = [];
+  for (const c of cards) {
+    const d = parseCard(c, category);
+    if (d) out.push(d);
+  }
+  return out;
+}
+
+// 月ページ -> [{ id, label, recommend, dishes }]
+function parseMonth(html, year) {
+  const weeks = [];
+  // コンテンツの週セクションは id="weekly-menu-N"（ナビは href="#..." なので一致しない）
+  const parts = html.split('id="weekly-menu-');
+  for (let k = 1; k < parts.length; k++) {
+    let sec = parts[k];
+    // 週セクション末尾の「Pick Up（人気メニュー）」スライダー等は重複カードなので切り落とす
+    const cut = sec.search(/data-name="slider-|<!-- Pick Up|class="w-advertising/);
+    if (cut >= 0) sec = sec.slice(0, cut);
+
+    const h4m = sec.match(/<h4[\s\S]*?<\/h4>/);
+    if (!h4m) continue;
+    const h4txt = stripTags(h4m[0]).replace(/\s/g, ""); // "6月15日〜6月21日"
+    const dm = h4txt.match(/(\d{1,2})月(\d{1,2})日/); // 先頭=開始日
+    if (!dm) continue;
+    const mo = +dm[1],
+      da = +dm[2];
+    const id = `${year}${pad2(mo)}${pad2(da)}`;
+
+    const mainIdx = sec.indexOf(">主菜<");
+    const sideIdx = sec.indexOf(">副菜<");
+    const mainsHtml =
+      mainIdx >= 0 ? sec.slice(mainIdx, sideIdx > mainIdx ? sideIdx : undefined) : "";
+    const sidesHtml = sideIdx >= 0 ? sec.slice(sideIdx) : "";
+
+    const raw = [
+      ...parseCategoryCards(mainsHtml, "main"),
+      ...parseCategoryCards(sidesHtml, "side"),
+    ];
+    // 同名同カテゴリの重複を除去（スライダー等の取りこぼし対策）
+    const seen = new Set();
+    const dishes = [];
+    for (const d of raw) {
+      const key = d.category + "::" + d.name;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      dishes.push(d);
     }
-    if (!category || !contentCell) continue;
-    const inner = contentCell.replace(/<\/?td[^>]*>/gi, "");
-    for (const part of inner.split(/<br\s*\/?>/i)) {
-      const d = parseDishLine(part);
-      if (d) dishes.push({ ...d, category });
-    }
+    if (dishes.length === 0) continue;
+
+    const firstMain = dishes.find((d) => d.category === "main" && d.plan !== "5食");
+    weeks.push({
+      id,
+      label: weekLabel(id),
+      recommend: firstMain ? firstMain.name : dishes[0].name,
+      dishes,
+    });
   }
-  return dishes;
-}
-
-// プラン種別 ('three' | 'five' | null) を表ヘッダから判定
-function planOfTable(tableHtml) {
-  const head = stripTags(tableHtml.slice(0, 600));
-  if (/[5５]\s*食プラン/.test(head)) return "five";
-  if (/[3３]\s*食プラン/.test(head)) return "three";
-  return null;
-}
-
-function parseWeek(html, id) {
-  const titleM = html.match(/<title>([\s\S]*?)<\/title>/i);
-  const title = titleM ? stripTags(titleM[1]) : "";
-  const recM = title.match(/「([^」]+)」/);
-  const recommend = recM ? recM[1] : "";
-
-  const tables = matchAll(/<table[\s\S]*?<\/table>/gi, html).map((m) => m[0]);
-  let three = [];
-  let five = [];
-  for (const t of tables) {
-    const plan = planOfTable(t);
-    if (plan === "three") three = three.concat(parseTable(t));
-    else if (plan === "five") five = five.concat(parseTable(t));
-  }
-
-  // 3食プランを基本に、5食にしか無い品へ plan:"5食" を付ける
-  let base = three;
-  if (base.length === 0) base = five; // 3食表が無い週はフォールバック
-  const baseNames = new Set(base.map((d) => d.category + "::" + d.name));
-  const extras = five
-    .filter((d) => !baseNames.has(d.category + "::" + d.name))
-    .map((d) => ({ ...d, plan: "5食" }));
-
-  // 重複排除（同名同カテゴリは1つに）
-  const seen = new Set();
-  const dishes = [];
-  for (const d of [...base, ...extras]) {
-    const k = d.category + "::" + d.name;
-    if (seen.has(k)) continue;
-    seen.add(k);
-    dishes.push(d);
-  }
-  // 主菜→副菜の順に
-  dishes.sort((a, b) => (a.category === b.category ? 0 : a.category === "main" ? -1 : 1));
-
-  return { id, label: weekLabel(id), recommend, dishes };
+  return weeks;
 }
 
 /* --------------------------------- main ---------------------------------- */
 async function loadExisting() {
   try {
-    const txt = await readFile(OUT, "utf8");
-    return JSON.parse(txt);
+    return JSON.parse(await readFile(OUT, "utf8"));
   } catch {
     return { weeks: [] };
   }
 }
 
+function monthsToFetch() {
+  const now = new Date();
+  const out = [];
+  for (let i = 0; i < 2; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    out.push({ year: d.getFullYear(), ym: `${d.getFullYear()}${pad2(d.getMonth() + 1)}` });
+  }
+  return out;
+}
+
 async function main() {
   const existing = await loadExisting();
-  const existingById = new Map((existing.weeks || []).map((w) => [w.id, w]));
+  const byId = new Map();
 
-  // 1) 週ID一覧を収集（メニュー一覧ページ）
-  let ids = [];
-  try {
-    const listHtml = await getText(LIST_URL);
-    ids = [...new Set(matchAll(/\/menu\/(\d{8})/g, listHtml).map((m) => m[1]))];
-  } catch (e) {
-    console.error("menu list fetch failed:", e.message);
-  }
-  // 既存IDも候補に含め、新しい順に上位 KEEP_WEEKS 週
-  ids = [...new Set([...ids, ...existingById.keys()])].sort((a, b) => b.localeCompare(a));
-  const targets = ids.slice(0, KEEP_WEEKS);
-  console.log("target weeks:", targets.join(", ") || "(none)");
-
-  // 2) 各週を取得・パース（失敗/0品は既存を温存）
-  const weeks = [];
-  for (const id of targets) {
-    let parsed = null;
+  for (const { year, ym } of monthsToFetch()) {
     try {
-      const html = await getText(`${BASE}/menu/${id}`);
-      parsed = parseWeek(html, id);
+      const html = await getText(`${BASE}/menu/${ym}/`);
+      const weeks = parseMonth(html, year);
+      console.log(`menu/${ym}: ${weeks.length}週`);
+      for (const w of weeks) {
+        const mains = w.dishes.filter((d) => d.category === "main").length;
+        const sides = w.dishes.length - mains;
+        console.log(`  ${w.id}: ${w.dishes.length}品 (主菜${mains}/副菜${sides}) おすすめ=${w.recommend}`);
+        if (!byId.has(w.id)) byId.set(w.id, w);
+      }
     } catch (e) {
-      console.error(`week ${id} fetch failed:`, e.message);
-    }
-    if (parsed && parsed.dishes.length > 0) {
-      const mains = parsed.dishes.filter((d) => d.category === "main").length;
-      const sides = parsed.dishes.length - mains;
-      console.log(`  ${id}: ${parsed.dishes.length}品 (主菜${mains}/副菜${sides}) おすすめ=${parsed.recommend}`);
-      weeks.push(parsed);
-    } else if (existingById.has(id)) {
-      console.log(`  ${id}: パース0品 -> 既存データを温存`);
-      weeks.push(existingById.get(id));
-    } else {
-      console.log(`  ${id}: データ無し -> スキップ`);
+      console.error(`menu/${ym} 取得失敗:`, e.message);
     }
     await sleep(500);
   }
 
+  let weeks = [...byId.values()];
   if (weeks.length === 0) {
-    console.error("有効な週が1つも取れませんでした。menu.json は更新しません。");
+    console.error("有効な週が取れませんでした。menu.json は更新しません。");
     process.exit(0);
   }
-
   weeks.sort((a, b) => b.id.localeCompare(a.id));
-  const out = {
-    updatedAt: new Date().toISOString(),
-    source: "tsukurioki",
-    weeks,
-  };
+  weeks = weeks.slice(0, KEEP_WEEKS);
+
+  const out = { updatedAt: new Date().toISOString(), source: "tsuklio", weeks };
   await writeFile(OUT, JSON.stringify(out, null, 2) + "\n", "utf8");
-  console.log(`menu.json updated: ${weeks.length} weeks, updatedAt=${out.updatedAt}`);
+  console.log(`menu.json updated: ${weeks.length}週, updatedAt=${out.updatedAt}`);
 }
 
 main().catch((e) => {
