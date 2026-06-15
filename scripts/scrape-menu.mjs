@@ -164,7 +164,8 @@ async function loadExisting() {
 function monthsToFetch() {
   const now = new Date();
   const out = [];
-  for (let i = 0; i < 2; i++) {
+  // 前月・当月・翌月。月またぎの週（例: 6/29〜7/5）を取りこぼさず、翌月公開も先取りする。
+  for (let i = -1; i <= 1; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
     out.push({ year: d.getFullYear(), ym: `${d.getFullYear()}${pad2(d.getMonth() + 1)}` });
   }
