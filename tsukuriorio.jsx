@@ -117,7 +117,7 @@ const WEEKS = [
   },
 ];
 
-const initialSettings = { people: 2, freshDays: 3 };
+const initialSettings = { people: 2, freshDays: 3, theme: "default" };
 const blankState = () => ({ recipes: [], dishes: [], settings: { ...initialSettings } });
 
 /* 配置/ストックの実体（ツクリオ取り込み分＋自作から置いた分）。
@@ -399,6 +399,18 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // 平成ギャル♡テーマのときだけ、必要な丸ゴシック系フォントを読み込む
+  useEffect(() => {
+    if (state.settings.theme !== "heisei") return;
+    if (document.getElementById("heisei-fonts")) return;
+    const l = document.createElement("link");
+    l.id = "heisei-fonts";
+    l.rel = "stylesheet";
+    l.href =
+      "https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@400;700;800&family=Zen+Maru+Gothic:wght@500;700;900&display=swap";
+    document.head.appendChild(l);
+  }, [state.settings.theme]);
+
   const { dishes, recipes, settings } = state;
   const viewWeekId = idOfMonday(viewMonday);
   const stock = useMemo(
@@ -448,7 +460,7 @@ export default function App() {
   };
 
   return (
-    <div className="om-root">
+    <div className={"om-root" + (settings.theme === "heisei" ? " theme-heisei" : "")}>
       <style>{CSS}</style>
 
       <header className="om-head">
@@ -1204,6 +1216,19 @@ function SettingsSheet({ settings, onChange, onReset, onClose }) {
         </div>
 
         <div className="om-field">
+          <span>見た目（テーマ）</span>
+          <Seg
+            options={[
+              ["default", "シンプル"],
+              ["heisei", "平成ギャル♡"],
+            ]}
+            value={settings.theme || "default"}
+            onChange={(v) => onChange({ theme: v })}
+          />
+          <small className="om-hint">「平成ギャル♡」にすると、ピンク全開のデコメ風になります。</small>
+        </div>
+
+        <div className="om-field">
           <span>冷蔵で食べきる日数</span>
           <Seg
             options={[
@@ -1534,4 +1559,82 @@ const CSS = `
 button:focus-visible{outline:2.5px solid var(--accent); outline-offset:2px;}
 @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
 @media (max-width:520px){ .om-chip-name{max-width:120px;} }
+
+/* ============================ 平成ギャル♡テーマ ============================ */
+.om-root.theme-heisei{
+  --bg:#FFEAF4; --card:#FFFFFF; --ink:#5B2A4A; --ink2:#C98AB0; --line:#FFC2DD;
+  --accent:#FF2D8E; --accent-bg:#FFD1E8; --olive:#C9A7FF; --warn:#E0408A;
+  --fresh:#1FA89C; --fresh-bg:#D6F6F0; --frozen:#5B8DEF; --frozen-bg:#E3ECFF;
+  --grad-candy:linear-gradient(135deg,#FF8FC8 0%,#FF2D8E 100%);
+  --font:"M PLUS Rounded 1c","Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  background-color:#FFEAF4;
+  background-image:radial-gradient(#FFC9E4 20%,transparent 21%),linear-gradient(180deg,#FFE3F1,#FFEAF4 38%);
+  background-size:22px 22px,100% 100%;
+}
+/* ヘッダー */
+.theme-heisei .om-brand h1{
+  font-family:"Mochiy Pop One","M PLUS Rounded 1c",sans-serif; font-weight:400;
+  background:linear-gradient(#fff,#FFE0F0); -webkit-background-clip:text; background-clip:text; color:transparent;
+  -webkit-text-stroke:2px #fff; paint-order:stroke fill; filter:drop-shadow(1.5px 2px 0 #FF2D8E);}
+.theme-heisei .om-brand p{color:#E48ABC; font-weight:700;}
+.theme-heisei .om-brand p::after{content:" ♡";}
+.theme-heisei .om-mark{border-radius:50% 50% 50% 9px; background:var(--grad-candy); box-shadow:0 4px 12px rgba(255,45,142,.4);}
+.theme-heisei .om-mark-i{border-radius:50% 50% 50% 3px; background:#fff;}
+.theme-heisei .om-icon{border:2px solid #fff; border-radius:14px; color:var(--accent); background:#fff; box-shadow:0 3px 0 #FFC2DD;}
+/* タブ＝グミ */
+.theme-heisei .om-tabs button{border:2px solid #fff; border-radius:999px; background:#fff; color:#C98AB0; font-weight:800; box-shadow:0 3px 0 #FFD1E8;}
+.theme-heisei .om-tabs button.on{background:var(--grad-candy); color:#fff; border-color:#fff; box-shadow:0 4px 0 #E01b76; transform:translateY(-1px);}
+/* ボタン */
+.theme-heisei .om-primary{background:var(--grad-candy); border:3px solid #fff; border-radius:999px; font-weight:800;
+  box-shadow:0 6px 0 #E01b76,0 10px 16px rgba(255,45,142,.35); text-shadow:0 2px 0 rgba(224,27,118,.5);}
+.theme-heisei .om-primary:active{transform:translateY(3px); box-shadow:0 2px 0 #E01b76,0 4px 8px rgba(255,45,142,.3);}
+.theme-heisei .om-ghost{border:2px solid #FFC2DD; border-radius:999px; background:#fff; color:var(--accent); font-weight:800;}
+.theme-heisei .om-refresh{border:2px solid #fff; border-radius:999px; box-shadow:0 3px 0 #FFD1E8;}
+.theme-heisei .om-link{color:var(--accent);}
+/* 週ナビ */
+.theme-heisei .om-weeknav-arrow{border:2px solid #fff; border-radius:16px; box-shadow:0 3px 0 #FFD1E8; color:var(--accent);}
+.theme-heisei .om-weeknav-c{border:2px solid #fff; border-radius:18px; box-shadow:0 3px 0 #FFD1E8;}
+.theme-heisei .om-weeknav-label{color:var(--accent);}
+.theme-heisei .om-weeknav-badge.now{background:var(--grad-candy);}
+/* カード類＝ステッカー帳 */
+.theme-heisei .om-card,.theme-heisei .om-shelf,.theme-heisei .om-list,.theme-heisei .om-cal,.theme-heisei .om-cal-detail{
+  border:3px solid #fff; border-radius:26px; box-shadow:0 10px 22px rgba(255,95,174,.22),0 0 0 3px #FFEAF4;}
+.theme-heisei .om-shelf-h{color:var(--accent);}
+.theme-heisei .om-shelf-h::before{content:"♡"; margin-right:2px;}
+.theme-heisei .om-h2{color:var(--accent);}
+.theme-heisei .om-day{border:3px solid #fff; border-radius:22px; box-shadow:0 8px 18px rgba(255,95,174,.2);}
+.theme-heisei .om-day.today{border-color:#fff; box-shadow:0 0 0 3px var(--accent),0 8px 18px rgba(255,45,142,.3);}
+.theme-heisei .om-day-h{background:linear-gradient(135deg,#FFE3F1,#FFD1E8); border-bottom-color:#FFC2DD;}
+.theme-heisei .om-today-tag{background:var(--grad-candy);}
+.theme-heisei .om-day-empty{color:#F3B8D6;}
+/* チップ・ピル */
+.theme-heisei .om-chip{border:2px solid #fff; border-radius:999px; background:#FFF7FB; box-shadow:0 3px 6px rgba(255,95,174,.2);}
+.theme-heisei .om-chip:hover{background:var(--accent-bg); border-color:#fff;}
+.theme-heisei .om-pd{border-radius:14px;}
+.theme-heisei .om-row-cat,.theme-heisei .om-cal-head span{color:#B96AA0;}
+/* 入力・セグ・スイッチ */
+.theme-heisei .om-input{border:3px solid #FFC2DD; border-radius:16px; background:#FFF7FB; font-weight:700;}
+.theme-heisei .om-input:focus{border-color:var(--accent); box-shadow:0 0 0 4px #FFD1E8;}
+.theme-heisei .om-seg{background:#FFE3F1; border:2px solid #fff; border-radius:999px;}
+.theme-heisei .om-seg button{border-radius:999px; color:#C98AB0; font-weight:800;}
+.theme-heisei .om-seg button.on{background:var(--grad-candy); color:#fff; box-shadow:0 2px 6px rgba(255,45,142,.4);}
+.theme-heisei .om-switch{background:#FFD1E8; border:2px solid #fff;}
+.theme-heisei .om-freeze-toggle{border:2px solid #fff; border-radius:16px;}
+.theme-heisei .om-freeze-toggle.on .om-switch,.theme-heisei .om-mini-toggle.on .om-switch{background:var(--grad-candy);}
+/* 取り込みバナー */
+.theme-heisei .om-import{border:3px solid #fff; border-radius:22px; background:linear-gradient(135deg,#FFF3B0,#FFE3F1); box-shadow:0 8px 18px rgba(255,95,174,.22);}
+.theme-heisei .om-import-t{color:#C0398A;}
+/* カレンダー */
+.theme-heisei .om-cal-cell{border-radius:14px; background:#FFF7FB;}
+.theme-heisei .om-cal-cell.today{border-color:var(--accent);}
+.theme-heisei .om-cal-cell.sel{background:var(--accent-bg); border-color:var(--accent);}
+.theme-heisei .om-cal-dot{background:var(--accent);}
+.theme-heisei .om-cal-title,.theme-heisei .om-cal-detail-h{color:var(--accent);}
+/* シート・トースト */
+.theme-heisei .om-sheet{background:#FFEAF4;}
+.theme-heisei .om-sheet-h h3{color:var(--accent); font-family:"Mochiy Pop One","M PLUS Rounded 1c",sans-serif; font-weight:400;}
+.theme-heisei .om-sheet-day{border:2px solid #fff; border-radius:16px; box-shadow:0 3px 0 #FFD1E8;}
+.theme-heisei .om-sheet-day.current{border-color:var(--accent);}
+.theme-heisei .om-toast{background:var(--grad-candy); border:2px solid #fff; border-radius:999px;}
+.theme-heisei .om-danger{border-radius:999px; border:2px solid #fff;}
 `;
