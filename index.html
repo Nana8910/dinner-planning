@@ -17,14 +17,14 @@
   #root{min-height:100vh;}
   .om-boot{font-family:system-ui,sans-serif;color:#7A746B;text-align:center;padding:80px 20px;}
 </style>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 </head>
 <body>
 <div id="root"><div class="om-boot">読み込み中…（初回はネット接続が必要です）</div></div>
 
-<script type="text/babel" data-presets="react">
+<script type="text/x-app-jsx" id="app-src">
 /* ---- lucide-react のかわりのインラインSVGアイコン ---- */
 const Icon = ({ size = 24, className, children, ...rest }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
@@ -1675,6 +1675,26 @@ button:focus-visible{outline:2.5px solid var(--accent); outline-offset:2px;}
 
 const _root = ReactDOM.createRoot(document.getElementById("root"));
 _root.render(<App />);
+</script>
+<script>
+(function () {
+  function boot() {
+    try {
+      var src = document.getElementById("app-src").textContent;
+      var code = Babel.transform(src, { presets: ["react"] }).code;
+      (0, eval)(code);
+    } catch (e) {
+      var r = document.getElementById("root");
+      if (r) r.innerHTML = '<div class="om-boot">読み込みに失敗しました。ページを再読み込みしてください。</div>';
+      throw e;
+    }
+  }
+  var n = 0;
+  var t = setInterval(function () {
+    if (window.Babel && window.React && window.ReactDOM) { clearInterval(t); boot(); }
+    else if (++n > 400) { clearInterval(t); }
+  }, 50);
+})();
 </script>
 </body>
 </html>
