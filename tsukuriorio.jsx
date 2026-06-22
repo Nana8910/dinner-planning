@@ -232,6 +232,30 @@ function reducer(state, action) {
           d.id === action.id ? { ...d, status: action.status } : d
         ),
       };
+    case "CARRY_LEFTOVER": {
+      // 元の日は「食べた」にし、選んだ後日に「のこり」を1つ作る
+      const orig = state.dishes.find((d) => d.id === action.id);
+      if (!orig) return state;
+      const leftover = makeDish({
+        name: orig.name,
+        category: orig.category,
+        freezable: orig.freezable,
+        servings: orig.servings,
+        source: orig.source,
+        kid: orig.kid,
+        weekId: orig.weekId,
+      });
+      leftover.date = action.date;
+      leftover.storage = storageForDate(leftover, action.date, state.settings.freshDays);
+      leftover.leftover = true;
+      return {
+        ...state,
+        dishes: [
+          ...state.dishes.map((d) => (d.id === action.id ? { ...d, status: "eaten" } : d)),
+          leftover,
+        ],
+      };
+    }
     case "AUTO_WEEK":
       return { ...state, dishes: autoArrangeWeek(state.dishes, action.weekId, state.settings) };
     case "CLEAR_WEEK":
@@ -581,9 +605,14 @@ export default function App() {
           settings={settings}
           dishes={dishes}
           onPick={(date) => {
-            dispatch({ type: "ASSIGN", id: sheet.id, date });
+            if (sheet.mode === "leftover") {
+              dispatch({ type: "CARRY_LEFTOVER", id: sheet.id, date });
+              ping("のこりを別の日に回しました");
+            } else {
+              dispatch({ type: "ASSIGN", id: sheet.id, date });
+              ping("ふりわけました");
+            }
             setSheet(null);
-            ping("ふりわけました");
           }}
           onUnassign={() => {
             dispatch({ type: "UNASSIGN", id: sheet.id });
@@ -835,6 +864,7 @@ function PlannedDish({ d, from, onOpenSheet, onStatus }) {
           {d.storage === "frozen" ? "冷凍" : "冷蔵"}
         </span>
         <span className="om-pd-name">{d.name}</span>
+        {d.leftover && <span className="om-pd-left">のこり</span>}
         {eaten && <Check size={14} className="om-eaten-i" />}
       </button>
       {open && (
@@ -842,7 +872,10 @@ function PlannedDish({ d, from, onOpenSheet, onStatus }) {
           {!eaten ? (
             <>
               <button onClick={() => { onStatus(d.id, "eaten"); setOpen(false); }}>
-                <Check size={14} /> 食べた
+                <Check size={14} /> 食べた（完食）
+              </button>
+              <button onClick={() => { onOpenSheet(d.id, "leftover", from); setOpen(false); }}>
+                <CalendarDays size={14} /> のこりを別の日へ
               </button>
               <button onClick={() => { onOpenSheet(d.id, "move", from); setOpen(false); }}>
                 <ArrowRight size={14} /> 後日にまわす
@@ -879,7 +912,13 @@ function DaySheet({ dish, mode, from, settings, dishes, onPick, onUnassign, onCl
   const baseMon = dish.weekId ? weekStartISO(dish.weekId) : mondayISO(from || todayISO());
   const days = Array.from({ length: 7 }, (_, i) => addDaysISO(baseMon, i));
   const title =
-    mode === "move" ? "後日にまわす" : mode === "assign" && from != null ? "別の日へ移す" : "どの日に食べる？";
+    mode === "leftover"
+      ? "のこりを回す日"
+      : mode === "move"
+      ? "後日にまわす"
+      : mode === "assign" && from != null
+      ? "別の日へ移す"
+      : "どの日に食べる？";
   return (
     <div className="om-modal-wrap" onClick={onClose}>
       <div className="om-sheet" onClick={(e) => e.stopPropagation()}>
@@ -897,6 +936,12 @@ function DaySheet({ dish, mode, from, settings, dishes, onPick, onUnassign, onCl
           </button>
         </div>
 
+        {mode === "leftover" && (
+          <p className="om-sheet-tip">
+            <CalendarDays size={13} /> 今日のぶんは「食べた」になり、選んだ日に「のこり」が出ます。
+            {dish.freezable ? "冷凍できるので後半でも安心。" : "冷蔵のみなので早めの日に。"}
+          </p>
+        )}
         {mode === "move" && dish.freezable && (
           <p className="om-sheet-tip">
             <Snowflake size={13} /> 冷凍できるので、後半にまわすと長持ちします。
@@ -911,7 +956,7 @@ function DaySheet({ dish, mode, from, settings, dishes, onPick, onUnassign, onCl
         <div className="om-sheet-days">
           {days.map((iso) => {
             const load = dishes.filter((d) => d.date === iso && d.id !== dish.id).length;
-            const disabled = mode === "move" && from != null && iso <= from;
+            const disabled = (mode === "move" || mode === "leftover") && from != null && iso <= from;
             const willFreeze = dish.freezable && daysBetween(baseMon, iso) >= settings.freshDays;
             return (
               <button
@@ -932,7 +977,7 @@ function DaySheet({ dish, mode, from, settings, dishes, onPick, onUnassign, onCl
           })}
         </div>
 
-        {from != null && (
+        {from != null && mode !== "leftover" && (
           <button className="om-ghost wide" onClick={onUnassign}>
             <PackageOpen size={15} /> ストックに戻す
           </button>
@@ -1041,6 +1086,7 @@ function HistoryGroup({ label, items }) {
             {d.storage === "frozen" ? "冷凍" : "冷蔵"}
           </span>
           <span className="om-cal-item-name">{d.name}</span>
+          {d.leftover && <span className="om-pd-left">のこり</span>}
           {d.status === "eaten" && <Check size={14} className="om-eaten-i" />}
         </div>
       ))}
@@ -1440,6 +1486,7 @@ const CSS = `
 .om-pd.src-home .om-pd-badge{background:var(--home);}
 .om-pd-name{font-size:12px; font-weight:700; line-height:1.25;}
 .om-pd.eaten .om-pd-name{text-decoration:line-through;}
+.om-pd-left{flex-shrink:0; font-size:9px; font-weight:800; color:#fff; background:#8A5CD6; border-radius:5px; padding:1px 5px;}
 .om-eaten-i{margin-left:auto; color:var(--fresh); flex-shrink:0;}
 .om-pd-menu{display:flex; flex-direction:column; border-top:1px solid rgba(0,0,0,.06);}
 .om-pd-menu button{display:flex; align-items:center; gap:7px; background:rgba(255,255,255,.6);
