@@ -1,7 +1,267 @@
 {
-  "updatedAt": "2026-06-15T03:51:41.152Z",
+  "updatedAt": "2026-06-19T13:00:58.816Z",
   "source": "tsuklio",
   "weeks": [
+    {
+      "id": "20260727",
+      "label": "7/27〜8/2",
+      "recommend": "デミグラスソースハンバーグ",
+      "dishes": [
+        {
+          "name": "デミグラスソースハンバーグ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "彩りナムルとそぼろのビビンバ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "鶏唐揚げの冷製トマトにらだれ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "照り焼きチキン",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "カレーポークビーンズ",
+          "category": "main",
+          "freezable": false,
+          "plan": "5食"
+        },
+        {
+          "name": "にんじんしりしり",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "豆腐と海老の中華炒め",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "厚揚げの南蛮漬け",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "小松菜のチャプチェ風",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "素麺のお供に！夏野菜のうま煮",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "かぼちゃとさつまいものデリ風サラダ",
+          "category": "side",
+          "freezable": false,
+          "plan": "5食"
+        }
+      ]
+    },
+    {
+      "id": "20260720",
+      "label": "7/20〜7/26",
+      "recommend": "ころっとチキン　ナポリタン味",
+      "dishes": [
+        {
+          "name": "ころっとチキン　ナポリタン味",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "牛肉と厚揚げのコチュジャン煮",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "ぷりぷりっ！のエビカツ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "大葉入り鶏つくね",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "特製！タコミート",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "大根の比叡湯葉あん",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "いり豆腐",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "蒸し野菜のツナソース",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "ふーイリチー",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "スプーンでぱくっ！ころころサラダ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "なすとツナの揚げ浸し",
+          "category": "side",
+          "freezable": true,
+          "plan": "5食"
+        }
+      ]
+    },
+    {
+      "id": "20260713",
+      "label": "7/13〜7/19",
+      "recommend": "鶏レモン",
+      "dishes": [
+        {
+          "name": "鶏レモン",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "辛くない麻婆豆腐",
+          "category": "main",
+          "freezable": false
+        },
+        {
+          "name": "鶏と野菜の黒酢餡",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "豚肉団子の照り煮",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "ごはんにぴったり！豚こまのルーローハン風",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "春雨のピリ辛炒め",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "ごぼうとブロッコリーのサラダ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "蒸し鶏とオクラの和風ナムル",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "ポークビーンズ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "和風オニオンスライスポテトサラダ",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "和風みそラタトゥイユ",
+          "category": "side",
+          "freezable": true,
+          "plan": "5食"
+        }
+      ]
+    },
+    {
+      "id": "20260706",
+      "label": "7/6〜7/12",
+      "recommend": "赤魚の煮付け",
+      "dishes": [
+        {
+          "name": "赤魚の煮付け",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "パスタやご飯に！ボロネーゼ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "チキンカツの和風おろし",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "野菜たっぷり黒酢肉団子",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "豚肉とイカのXO醤炒め",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "海鮮のグレインズサラダ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "ごま香る白和え",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "ベーコンクリームポテト",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "高野豆腐のそぼろ煮",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "花野菜とチキンのコブサラダ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "切干大根の韓国風サラダ",
+          "category": "side",
+          "freezable": true,
+          "plan": "5食"
+        }
+      ]
+    },
     {
       "id": "20260629",
       "label": "6/29〜7/5",
@@ -388,201 +648,6 @@
           "name": "しょうが香るホットなサラダ",
           "category": "side",
           "freezable": false,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260518",
-      "label": "5/18〜5/24",
-      "recommend": "デミグラスソースハンバーグ",
-      "dishes": [
-        {
-          "name": "デミグラスソースハンバーグ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "辛くない麻婆豆腐",
-          "category": "main",
-          "freezable": false
-        },
-        {
-          "name": "鶏唐揚げの冷製トマトにらだれ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "筑前煮",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "彩りナムルとそぼろのビビンバ",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "ごぼうとブロッコリーのサラダ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "ほっこり牛肉じゃが",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "和風みそラタトゥイユ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "厚揚げの南蛮漬け",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "小松菜のチャプチェ風",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "スプーンでぱくっ！ころころサラダ",
-          "category": "side",
-          "freezable": true,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260511",
-      "label": "5/11〜5/17",
-      "recommend": "赤魚の煮付け",
-      "dishes": [
-        {
-          "name": "赤魚の煮付け",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "パスタやご飯に！ボロネーゼ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "かにクリーミーコロッケ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "野菜たっぷり黒酢肉団子",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "ごはんにぴったり！豚こまのルーローハン風",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "蒸し野菜のジェノベーゼソース",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "切干大根の韓国風サラダ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "ひよこ豆とソーセージの煮込み",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "海鮮のグレインズサラダ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "いり豆腐",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "大根とにんじんの旨塩きんぴら",
-          "category": "side",
-          "freezable": false,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260504",
-      "label": "5/4〜5/10",
-      "recommend": "鶏肉のカレーチーズ焼き",
-      "dishes": [
-        {
-          "name": "鶏肉のカレーチーズ焼き",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "豚のプルコギ風",
-          "category": "main",
-          "freezable": false
-        },
-        {
-          "name": "特製！酢豚",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "焼きとり風甘辛タレつくね",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "豚肉とイカのXO醤炒め",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "かぼちゃとさつまいものデリ風サラダ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "金沢の味！治部煮風",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "3色野菜とチキンのイタリアンサラダ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "揚げなすのさっぱりだし酢醤油",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "にんじんしりしり",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "大根の比叡湯葉あん",
-          "category": "side",
-          "freezable": true,
           "plan": "5食"
         }
       ]
