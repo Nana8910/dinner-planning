@@ -777,13 +777,17 @@ function PlanView({
         ) : (
           <div className="om-chips">
             {stock.map((d) => (
-              <button key={d.id} className="om-chip" onClick={() => onOpenSheet(d.id, "assign")}>
+              <button
+                key={d.id}
+                className={"om-chip " + (d.source === "tsukurioki" ? "src-tsuk" : "src-home")}
+                onClick={() => onOpenSheet(d.id, "assign")}
+              >
                 <DishDot d={d} />
                 <span className="om-chip-name">{d.name}</span>
                 {d.freezable ? (
-                  <Snowflake size={13} className="om-frz" />
+                  <Snowflake size={13} className="om-store-i" />
                 ) : (
-                  <Refrigerator size={13} className="om-frd" />
+                  <Refrigerator size={13} className="om-store-i" />
                 )}
               </button>
             ))}
@@ -792,6 +796,11 @@ function PlanView({
       </section>
 
       {/* 週ボード */}
+      <div className="om-legend">
+        <span><i className="lg-tsuk" />ツクリオ</span>
+        <span><i className="lg-home" />自作</span>
+        <span className="om-legend-note">冷蔵／冷凍はアイコンで表示</span>
+      </div>
       <div className="om-scrollhint">← 横にスクロールして1週間 →</div>
       <div className="om-board">
         {weekDates.map((iso) => (
@@ -852,7 +861,7 @@ function PlannedDish({ d, from, onOpenSheet, onStatus }) {
   const [open, setOpen] = useState(false);
   const eaten = d.status === "eaten";
   return (
-    <div className={"om-pd " + (d.storage === "frozen" ? "frz" : "frd") + (eaten ? " eaten" : "")}>
+    <div className={"om-pd " + (d.source === "tsukurioki" ? "src-tsuk" : "src-home") + (eaten ? " eaten" : "")}>
       <button className="om-pd-main" onClick={() => setOpen((v) => !v)}>
         <span className="om-pd-badge">
           {d.storage === "frozen" ? <Snowflake size={12} /> : <Refrigerator size={12} />}
@@ -887,11 +896,12 @@ function PlannedDish({ d, from, onOpenSheet, onStatus }) {
 }
 
 function DishDot({ d }) {
+  const tsuk = d.source === "tsukurioki";
   return (
     <span
       className="om-dot"
-      style={{ background: d.category === "main" ? "var(--accent)" : "var(--olive)" }}
-      title={d.category === "main" ? "主菜" : "副菜"}
+      style={{ background: tsuk ? "var(--tsuk)" : "var(--home)" }}
+      title={tsuk ? "ツクリオ" : "自作"}
     />
   );
 }
@@ -1330,6 +1340,8 @@ const CSS = `
   --fresh:#3F8F57; --fresh-bg:#E7F1E7;
   --frozen:#3A82A6; --frozen-bg:#E3EEF4;
   --accent:#D6852F; --accent-bg:#FBEEDC; --olive:#A9A083; --warn:#C4552E;
+  /* おかずの出どころ色：ツクリオ＝ブランドのオレンジ／自作＝グリーン（テーマに関係なく固定） */
+  --tsuk:#D6852F; --tsuk-bg:#FBEEDC; --home:#3F8F57; --home-bg:#E7F1E7;
   --font:'Hiragino Maru Gothic ProN','ヒラギノ丸ゴ ProN','Hiragino Kaku Gothic ProN','Yu Gothic Medium','メイリオ',Meiryo,system-ui,sans-serif;
 }
 *{box-sizing:border-box;}
@@ -1410,10 +1422,21 @@ const CSS = `
 .om-chips{display:flex; flex-wrap:wrap; gap:8px;}
 .om-chip{display:inline-flex; align-items:center; gap:7px; background:#FAF8F3; border:1px solid var(--line);
   border-radius:11px; padding:8px 11px; font-size:12.5px; font-weight:600;}
-.om-chip:hover{border-color:var(--accent); background:var(--accent-bg);}
+.om-chip.src-tsuk{background:var(--tsuk-bg); border-color:#EAD6B5;}
+.om-chip.src-home{background:var(--home-bg); border-color:#CADEC9;}
+.om-chip:hover{filter:brightness(.97);}
 .om-chip-name{max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.om-store-i{color:var(--ink2); flex-shrink:0;}
 .om-frz{color:var(--frozen);} .om-frd{color:var(--fresh);}
 .om-dot{width:8px;height:8px;border-radius:50%; flex-shrink:0;}
+
+/* 出どころの凡例 */
+.om-legend{display:flex; align-items:center; gap:14px; justify-content:center; margin:2px 0 4px; font-size:11px; font-weight:700; color:var(--ink2);}
+.om-legend span{display:inline-flex; align-items:center; gap:5px;}
+.om-legend i{width:10px; height:10px; border-radius:50%; display:inline-block;}
+.om-legend .lg-tsuk{background:var(--tsuk);}
+.om-legend .lg-home{background:var(--home);}
+.om-legend-note{color:#A7A296; font-weight:600;}
 
 /* board */
 .om-scrollhint{font-size:10.5px; color:var(--ink2); text-align:center; margin:2px 0 7px; letter-spacing:.08em; opacity:.7;}
@@ -1437,17 +1460,17 @@ const CSS = `
 .om-group{display:flex; flex-direction:column; gap:5px;}
 .om-group-l{font-size:10px; font-weight:800; color:var(--ink2); letter-spacing:.1em;}
 
-/* planned dish */
+/* planned dish — 色は出どころ（ツクリオ/自作）、冷蔵冷凍はアイコンのみ */
 .om-pd{border-radius:10px; overflow:hidden; border:1px solid transparent;}
-.om-pd.frd{background:var(--fresh-bg);}
-.om-pd.frz{background:var(--frozen-bg);}
+.om-pd.src-tsuk{background:var(--tsuk-bg);}
+.om-pd.src-home{background:var(--home-bg);}
 .om-pd.eaten{opacity:.5;}
 .om-pd-main{display:flex; align-items:center; gap:6px; width:100%; background:none; border:none;
   padding:7px 9px; text-align:left;}
 .om-pd-badge{display:inline-flex; align-items:center; gap:3px; font-size:9.5px; font-weight:800;
-  padding:2px 5px; border-radius:6px; flex-shrink:0;}
-.om-pd.frd .om-pd-badge{background:var(--fresh); color:#fff;}
-.om-pd.frz .om-pd-badge{background:var(--frozen); color:#fff;}
+  padding:2px 5px; border-radius:6px; flex-shrink:0; color:#fff;}
+.om-pd.src-tsuk .om-pd-badge{background:var(--tsuk);}
+.om-pd.src-home .om-pd-badge{background:var(--home);}
 .om-pd-name{font-size:12px; font-weight:700; line-height:1.25;}
 .om-pd.eaten .om-pd-name{text-decoration:line-through;}
 .om-eaten-i{margin-left:auto; color:var(--fresh); flex-shrink:0;}
@@ -1642,6 +1665,8 @@ button:focus-visible{outline:2.5px solid var(--accent); outline-offset:2px;}
 .theme-heisei .om-day-empty{color:#F3B8D6;}
 /* チップ・ピル */
 .theme-heisei .om-chip{border:2px solid #fff; border-radius:999px; background:#FFF7FB; box-shadow:0 3px 6px rgba(255,95,174,.2);}
+.theme-heisei .om-chip.src-tsuk{background:var(--tsuk-bg); border-color:#EAD6B5;}
+.theme-heisei .om-chip.src-home{background:var(--home-bg); border-color:#CADEC9;}
 .theme-heisei .om-chip:hover{background:var(--accent-bg); border-color:#fff;}
 .theme-heisei .om-pd{border-radius:14px;}
 .theme-heisei .om-row-cat,.theme-heisei .om-cal-head span{color:#B96AA0;}
