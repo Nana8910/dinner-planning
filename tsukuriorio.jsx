@@ -860,8 +860,8 @@ function PlannedDish({ d, from, onOpenSheet, onStatus }) {
     <div className={"om-pd " + (d.source === "tsukurioki" ? "src-tsuk" : "src-home") + (eaten ? " eaten" : "")}>
       <button className="om-pd-main" onClick={() => setOpen((v) => !v)}>
         <span className="om-pd-badge">
-          {d.storage === "frozen" ? <Snowflake size={12} /> : <Refrigerator size={12} />}
-          {d.storage === "frozen" ? "冷凍" : "冷蔵"}
+          {d.freezable ? <Snowflake size={12} /> : <Refrigerator size={12} />}
+          {d.freezable ? "冷凍可" : "冷蔵"}
         </span>
         <span className="om-pd-name">{d.name}</span>
         {d.leftover && <span className="om-pd-left">のこり</span>}
@@ -1081,9 +1081,9 @@ function HistoryGroup({ label, items }) {
       <span className="om-group-l">{label}</span>
       {items.map((d) => (
         <div key={d.id} className={"om-cal-item" + (d.status === "eaten" ? " eaten" : "")}>
-          <span className={"om-row-store " + (d.storage === "frozen" ? "frz" : "frd")}>
-            {d.storage === "frozen" ? <Snowflake size={12} /> : <Refrigerator size={12} />}
-            {d.storage === "frozen" ? "冷凍" : "冷蔵"}
+          <span className={"om-row-store " + (d.freezable ? "frz" : "frd")}>
+            {d.freezable ? <Snowflake size={12} /> : <Refrigerator size={12} />}
+            {d.freezable ? "冷凍可" : "冷蔵"}
           </span>
           <span className="om-cal-item-name">{d.name}</span>
           {d.leftover && <span className="om-pd-left">のこり</span>}
