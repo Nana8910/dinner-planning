@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-19T13:00:58.816Z",
+  "updatedAt": "2026-07-03T10:14:59.489Z",
   "source": "tsuklio",
   "weeks": [
     {
@@ -583,71 +583,6 @@
           "name": "オクラとイカのトマト煮",
           "category": "side",
           "freezable": true,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260525",
-      "label": "5/25〜5/31",
-      "recommend": "豆腐ハンバーグの和風おろしだれ",
-      "dishes": [
-        {
-          "name": "豆腐ハンバーグの和風おろしだれ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "牛肉と厚揚げのコチュジャン煮",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "具だくさん八宝菜",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "鶏肉のごまだれ焼き",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "たくさん野菜のミートグラタン",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "サラダチキンのオニオンマリネ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "緑黄色野菜と卵のサラダ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "ふーイリチー",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "バジルポテト",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "竹輪と蓮根の磯辺揚げ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "しょうが香るホットなサラダ",
-          "category": "side",
-          "freezable": false,
           "plan": "5食"
         }
       ]
