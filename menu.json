@@ -1,7 +1,332 @@
 {
-  "updatedAt": "2026-07-10T11:22:55.315Z",
+  "updatedAt": "2026-07-17T01:55:02.188Z",
   "source": "tsuklio",
   "weeks": [
+    {
+      "id": "20260831",
+      "label": "8/31〜9/6",
+      "recommend": "豆腐ハンバーグの和風おろしだれ",
+      "dishes": [
+        {
+          "name": "豆腐ハンバーグの和風おろしだれ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "串なし焼き鳥3種盛り合わせ（たれ）",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "油淋鶏",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "大豆入りドライカレー",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "豚とチンゲン菜の塩あん炒め",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "チャプチェ",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "しょうが香るホットなサラダ",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "筍とつみれの炊き合わせ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "高野豆腐の含め煮",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "蒸し鶏とオクラの和風ナムル",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "切干大根の韓国風サラダ",
+          "category": "side",
+          "freezable": true,
+          "plan": "5食"
+        }
+      ]
+    },
+    {
+      "id": "20260824",
+      "label": "8/24〜8/30",
+      "recommend": "ディアボラ風チキンステーキ",
+      "dishes": [
+        {
+          "name": "ディアボラ風チキンステーキ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "豚肉のすき焼き風炒め",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "チャイニーズデリ風セサミチキン",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "五目つくねの出汁あんかけ",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "家常豆腐",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "ひき肉と豆腐のにら炒め",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "ごろっと牛蒡のゴマ胡桃和え",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "湯葉と食べるオクラと菜の花のお浸し",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "揚げなすのさっぱりだし酢醤油",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "がんもとひじきの煮物",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "海老と卵の中華炒め",
+          "category": "side",
+          "freezable": true,
+          "plan": "5食"
+        }
+      ]
+    },
+    {
+      "id": "20260817",
+      "label": "8/17〜8/23",
+      "recommend": "トマトソースハンバーグ",
+      "dishes": [
+        {
+          "name": "トマトソースハンバーグ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "辛くないマーボーなす",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "中華あんと食べる白身魚の唐揚げ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "チキンソテー 和風玉ねぎソース",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "7種の野菜が入ったドライカレー",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "蒸し鶏の中華風ナムル",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "バジルポテト",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "定番の五目白和え",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "海鮮のグレインズサラダ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "たけのこの土佐煮",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "かぼちゃのそぼろあんかけ",
+          "category": "side",
+          "freezable": true,
+          "plan": "5食"
+        }
+      ]
+    },
+    {
+      "id": "20260810",
+      "label": "8/10〜8/16",
+      "recommend": "なすと豚肉のみそ炒め",
+      "dishes": [
+        {
+          "name": "なすと豚肉のみそ炒め",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "コクうま！ハッシュドビーフ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "鶏チリ",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "麩わ麩わ鶏つくね",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "お好みバーグごろごろ卵のせ",
+          "category": "main",
+          "freezable": true,
+          "plan": "5食"
+        },
+        {
+          "name": "彩り野菜のパスタサラダ ツナマヨ和え",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "かぼちゃのハニーナッツサラダ",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "豚バラ肉と野菜のカレー風味炒め",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "ひじきと切り干し大根のサラダ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "さつま揚げと糸こんにゃくの甘辛炒め",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "洋野菜とベーコンの塩麹ソテー",
+          "category": "side",
+          "freezable": true,
+          "plan": "5食"
+        }
+      ]
+    },
+    {
+      "id": "20260803",
+      "label": "8/3〜8/9",
+      "recommend": "鶏肉のごまだれ焼き",
+      "dishes": [
+        {
+          "name": "鶏肉のごまだれ焼き",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "鶏と大根の韓国風煮物",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "きのこおろしポン酢で食べるアジ竜田",
+          "category": "main",
+          "freezable": true
+        },
+        {
+          "name": "塩まーぼー",
+          "category": "main",
+          "freezable": false,
+          "plan": "5食"
+        },
+        {
+          "name": "牛肉とポテトの甘辛炒め",
+          "category": "main",
+          "freezable": false,
+          "plan": "5食"
+        },
+        {
+          "name": "ひじきの和風ポテトサラダ",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "いかとブロッコリーの塩昆布あえ",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "緑黄色野菜と卵のサラダ",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "キャベツとソーセージのカレー炒め",
+          "category": "side",
+          "freezable": true
+        },
+        {
+          "name": "九州の家庭料理！がめ煮",
+          "category": "side",
+          "freezable": false
+        },
+        {
+          "name": "ひよこ豆とソーセージの煮込み",
+          "category": "side",
+          "freezable": true,
+          "plan": "5食"
+        }
+      ]
+    },
     {
       "id": "20260727",
       "label": "7/27〜8/2",
@@ -323,266 +648,6 @@
           "name": "イカとポテトの葱塩バター焼き",
           "category": "side",
           "freezable": false,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260622",
-      "label": "6/22〜6/28",
-      "recommend": "辛くないマーボーなす",
-      "dishes": [
-        {
-          "name": "辛くないマーボーなす",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "牛バラ大根",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "白身魚のフライ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "五目つくねの出汁あんかけ",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "家常豆腐",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "春雨サラダ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "ブロッコリーと卵のデリ風サラダ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "たけのこの土佐煮",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "ひき肉と豆腐のにら炒め",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "湯葉と食べるオクラと菜の花のお浸し",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "ラタトゥイユ",
-          "category": "side",
-          "freezable": true,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260615",
-      "label": "6/15〜6/21",
-      "recommend": "みそ旨チーズタッカルビ",
-      "dishes": [
-        {
-          "name": "みそ旨チーズタッカルビ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "塩まーぼー",
-          "category": "main",
-          "freezable": false
-        },
-        {
-          "name": "豚肉とレンコンのイタリア風煮込み",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "5種野菜入りソースのポークチャップ",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "ごはんと一緒に！ガパオミート",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "定番の五目白和え",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "小松菜とごぼうの胡麻和え",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "クリームソースのかぼちゃニョッキ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "5種野菜のみぞれ煮",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "さつま揚げと糸こんにゃくの甘辛炒め",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "五目野菜とひじきの中華そぼろ炒め",
-          "category": "side",
-          "freezable": true,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260608",
-      "label": "6/8〜6/14",
-      "recommend": "てりやき豆腐ハンバーグ",
-      "dishes": [
-        {
-          "name": "てりやき豆腐ハンバーグ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "マカロニえびグラタン",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "さわらの甘辛衣揚げ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "チキンソテー 和風玉ねぎソース",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "豚とチンゲン菜の塩あん炒め",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "つみれとカブのぽかぽか煮",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "キャベツとソーセージのカレー炒め",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "かぼちゃのハニーナッツサラダ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "チャプチェ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "ひじきと切り干し大根のサラダ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "3色野菜とチキンのイタリアンサラダ",
-          "category": "side",
-          "freezable": true,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260601",
-      "label": "6/1〜6/7",
-      "recommend": "麩わ麩わ鶏つくね",
-      "dishes": [
-        {
-          "name": "麩わ麩わ鶏つくね",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "なすと豚肉のみそ炒め",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "きのこおろしで食べるアジ竜田",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "照り焼きチキン",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "牛肉とポテトの甘辛炒め",
-          "category": "main",
-          "freezable": false,
-          "plan": "5食"
-        },
-        {
-          "name": "九州の家庭料理！がめ煮",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "ごろっと牛蒡のゴマ胡桃和え",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "ひじきの和風ポテトサラダ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "もち麦と5種豆の彩りサラダ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "豆腐と海老の中華炒め",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "オクラとイカのトマト煮",
-          "category": "side",
-          "freezable": true,
           "plan": "5食"
         }
       ]
