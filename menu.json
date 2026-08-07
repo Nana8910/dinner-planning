@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-31T02:00:16.956Z",
+  "updatedAt": "2026-08-07T02:12:03.036Z",
   "source": "tsuklio",
   "weeks": [
     {
@@ -583,71 +583,6 @@
           "name": "切干大根の韓国風サラダ",
           "category": "side",
           "freezable": true,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260629",
-      "label": "6/29〜7/5",
-      "recommend": "トマトソースハンバーグ",
-      "dishes": [
-        {
-          "name": "トマトソースハンバーグ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "豚のプルコギ風",
-          "category": "main",
-          "freezable": false
-        },
-        {
-          "name": "鶏ムネ肉の甘辛衣揚げ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "焼きとり風甘辛タレつくね",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "大豆入りドライカレー",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "里芋の和風ポテトサラダ",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "筍とつみれの炊き合わせ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "彩り野菜のパスタサラダ ツナマヨ和え",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "高野豆腐の含め煮",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "揚げなすのさっぱりだし酢醤油",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "イカとポテトの葱塩バター焼き",
-          "category": "side",
-          "freezable": false,
           "plan": "5食"
         }
       ]
