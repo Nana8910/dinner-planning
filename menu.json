@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-28T08:10:22.283Z",
+  "updatedAt": "2026-09-04T02:11:20.987Z",
   "source": "tsuklio",
   "weeks": [
     {
@@ -583,71 +583,6 @@
           "name": "ひよこ豆とソーセージの煮込み",
           "category": "side",
           "freezable": true,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260727",
-      "label": "7/27〜8/2",
-      "recommend": "デミグラスソースハンバーグ",
-      "dishes": [
-        {
-          "name": "デミグラスソースハンバーグ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "彩りナムルとそぼろのビビンバ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "鶏唐揚げの冷製トマトにらだれ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "照り焼きチキン",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "カレーポークビーンズ",
-          "category": "main",
-          "freezable": false,
-          "plan": "5食"
-        },
-        {
-          "name": "にんじんしりしり",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "豆腐と海老の中華炒め",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "厚揚げの南蛮漬け",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "小松菜のチャプチェ風",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "素麺のお供に！夏野菜のうま煮",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "かぼちゃとさつまいものデリ風サラダ",
-          "category": "side",
-          "freezable": false,
           "plan": "5食"
         }
       ]
