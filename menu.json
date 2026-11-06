@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-30T03:43:36.544Z",
+  "updatedAt": "2026-11-06T04:25:07.965Z",
   "source": "tsuklio",
   "weeks": [
     {
@@ -583,71 +583,6 @@
           "name": "厚揚げのえのき中華あん",
           "category": "side",
           "freezable": true,
-          "plan": "5食"
-        }
-      ]
-    },
-    {
-      "id": "20260928",
-      "label": "9/28〜10/4",
-      "recommend": "バターカレーチキン",
-      "dishes": [
-        {
-          "name": "バターカレーチキン",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "具だくさん八宝菜",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "鶏ムネ肉の甘辛衣揚げ",
-          "category": "main",
-          "freezable": true
-        },
-        {
-          "name": "焼きとり風甘辛タレつくね",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "彩りナムルとそぼろのビビンバ",
-          "category": "main",
-          "freezable": true,
-          "plan": "5食"
-        },
-        {
-          "name": "厚揚げの南蛮漬け",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "ゆば入りがんもが入った若竹煮",
-          "category": "side",
-          "freezable": false
-        },
-        {
-          "name": "いかとブロッコリーの塩昆布あえ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "スプーンでぱくっ！ころころサラダ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "ポークビーンズ",
-          "category": "side",
-          "freezable": true
-        },
-        {
-          "name": "豚肉と春雨のさっぱりポン酢炒め",
-          "category": "side",
-          "freezable": false,
           "plan": "5食"
         }
       ]
